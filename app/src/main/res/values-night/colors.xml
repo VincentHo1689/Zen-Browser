@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="address_bar_bg">#2C2C2C</color>
+    <color name="input_field_bg">#3A3A3A</color>
+    <color name="address_bar_text">#FFFFFF</color>
+    <color name="circle_symbol">#FFFFFF</color>
+    <color name="timer_green">#A3D9A5</color>
+    <color name="timer_yellow">#F4D03F</color>
+    <color name="timer_red">#E59866</color>
+</resources>

@@ -10,111 +10,105 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:max="100"
+        android:progressTint="@color/timer_green"
+        android:progressBackgroundTint="#20000000" />
+
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="48dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="8dp"
-        android:background="?attr/colorPrimary"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:background="@drawable/bottom_bar_bg"
         android:theme="@style/Theme.AppCompat.Light">
 
-        <!-- Address bar (left side, takes remaining width) -->
-        <EditText
-            android:id="@+id/url_bar"
+        <!-- URL container: FrameLayout to allow timer overlay -->
+        <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="36dp"
             android:layout_weight="1"
-            android:inputType="textUri"
-            android:imeOptions="actionGo"
-            android:singleLine="true"
-            android:padding="12dp"
-            android:background="@android:drawable/editbox_background"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorHint" />
+            android:background="@drawable/input_field_rounded">
 
-        <!-- Back button -->
-        <TextView
-            android:id="@+id/btn_back"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="&lt;"
-            android:textSize="24sp"
-            android:gravity="center"
-            android:textColor="?android:attr/textColorPrimary"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:focusable="true"
-            android:clickable="true" />
+            <EditText
+                android:id="@+id/url_bar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:inputType="textUri"
+                android:imeOptions="actionGo"
+                android:singleLine="true"
+                android:paddingStart="12dp"
+                android:paddingEnd="45dp"
+                android:background="@android:color/transparent"
+                android:textColor="@color/address_bar_text"
+                android:textColorHint="@color/address_bar_text"
+                android:textSize="14sp"
+                android:ellipsize="start"
+                android:scrollHorizontally="true"
+                android:maxLines="1" />
 
-        <!-- Forward button -->
-        <TextView
-            android:id="@+id/btn_forward"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="&gt;"
-            android:textSize="24sp"
-            android:gravity="center"
-            android:textColor="?android:attr/textColorPrimary"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:focusable="true"
-            android:clickable="true" />
+            <TextView
+                android:id="@+id/timer"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_gravity="end|center_vertical"
+                android:text="0:00"
+                android:textSize="10sp"
+                android:layout_marginEnd="12dp" 
+                android:padding="4dp"
+                android:gravity="center"
+                android:visibility="visible" />
+
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/circle_bg"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/btn_back"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="&lt;"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:textColor="@color/circle_symbol"
+                android:clickable="true"
+                android:focusable="true" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/circle_bg"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/btn_forward"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="&gt;"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:textColor="@color/circle_symbol"
+                android:clickable="true"
+                android:focusable="true" />
+        </FrameLayout>
 
     </LinearLayout>
 
 </LinearLayout>
-
-<!-- <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
-
-    <WebView
-        android:id="@+id/webview"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="8dp"
-        android:background="#f0f0f0">
-
-        <ImageButton
-            android:id="@+id/btn_back"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@android:drawable/ic_media_previous"
-            android:background="?attr/selectableItemBackgroundBorderless" />
-
-        <ImageButton
-            android:id="@+id/btn_forward"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@android:drawable/ic_media_next"
-            android:background="?attr/selectableItemBackgroundBorderless" />
-
-        <ImageButton
-            android:id="@+id/btn_home"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@android:drawable/ic_media_play"
-            android:background="?attr/selectableItemBackgroundBorderless" />
-
-        <EditText
-            android:id="@+id/url_bar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:inputType="textUri"
-            android:imeOptions="actionGo"
-            android:singleLine="true"
-            android:padding="12dp"
-            android:background="@android:drawable/editbox_background" />
-
-    </LinearLayout>
-
-</LinearLayout> -->
