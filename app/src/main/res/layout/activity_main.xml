@@ -1,122 +1,150 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-    android:id="@+id/swipe_refresh_layout"
-    android:layout_width="match_parent"
-    android:layout_height="0dp"
-    android:layout_weight="1">
-
-        <WebView
-        android:id="@+id/webview"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
-    <ProgressBar
-        android:id="@+id/progress_bar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:max="100"
-        android:progressTint="@color/timer_green"
-        android:progressBackgroundTint="#20000000" />
-
+    <!-- Main content: WebView + bottom bar -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp"
-        android:background="@drawable/bottom_bar_bg"
-        android:theme="@style/Theme.AppCompat.Light">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <!-- URL container: FrameLayout to allow timer overlay -->
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:background="@drawable/input_field_rounded">
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipe_refresh_layout"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
-            <EditText
-                android:id="@+id/url_bar"
+            <WebView
+                android:id="@+id/webview"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:inputType="textUri"
-                android:imeOptions="actionGo"
-                android:singleLine="true"
-                android:paddingStart="12dp"
-                android:paddingEnd="45dp"
-                android:background="@android:color/transparent"
-                android:textColor="@color/address_bar_text"
-                android:textColorHint="@color/address_bar_text"
-                android:textSize="14sp"
-                android:ellipsize="start"
-                android:scrollHorizontally="true"
-                android:maxLines="1" />
+                android:layout_height="match_parent" />
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-            <TextView
-                android:id="@+id/timer"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_gravity="end|center_vertical"
-                android:text="0:00"
-                android:textSize="10sp"
-                android:layout_marginEnd="12dp" 
-                android:padding="4dp"
-                android:paddingTop="6dp"
-                android:gravity="center"
-                android:visibility="visible" />
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:max="100"
+            android:progressTint="@color/timer_green"
+            android:progressBackgroundTint="#20000000" />
 
-        </FrameLayout>
+        <LinearLayout
+            android:id="@+id/bottom_bar"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:background="@drawable/bottom_bar_bg"
+            android:theme="@style/Theme.AppCompat.Light">
 
-        <FrameLayout
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginStart="4dp"
-            android:background="@drawable/circle_bg"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:gravity="center">
+            <FrameLayout
+                android:id="@+id/url_container"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:background="@drawable/input_field_rounded">
 
-            <TextView
-                android:id="@+id/btn_back"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="&lt;"
-                android:textSize="14sp"
-                android:gravity="center"
-                android:textColor="@color/circle_symbol"
-                android:clickable="true"
-                android:focusable="true" />
-        </FrameLayout>
+                <EditText
+                    android:id="@+id/url_bar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:inputType="textUri"
+                    android:imeOptions="actionGo"
+                    android:singleLine="true"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="45dp"
+                    android:background="@android:color/transparent"
+                    android:textColor="@color/address_bar_text"
+                    android:textColorHint="@color/address_bar_text"
+                    android:textSize="14sp"
+                    android:ellipsize="start"
+                    android:scrollHorizontally="true"
+                    android:maxLines="1" />
 
-        <FrameLayout
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginStart="4dp"
-            android:background="@drawable/circle_bg"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:gravity="center">
+                <TextView
+                    android:id="@+id/timer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="end|center_vertical"
+                    android:text="0:00"
+                    android:textSize="10sp"
+                    android:layout_marginEnd="12dp"
+                    android:padding="4dp"
+                    android:paddingTop="6dp"
+                    android:gravity="center"
+                    android:visibility="visible" />
 
-            <TextView
-                android:id="@+id/btn_forward"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="&gt;"
-                android:textSize="14sp"
-                android:gravity="center"
-                android:textColor="@color/circle_symbol"
-                android:clickable="true"
-                android:focusable="true" />
-        </FrameLayout>
+                <ImageView
+                    android:id="@+id/btn_qr"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:layout_marginEnd="10dp"
+                    android:src="@drawable/ic_qr_code"
+                    android:visibility="gone"
+                    android:contentDescription="Scan QR code"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </FrameLayout>
 
+            <FrameLayout
+                android:id="@+id/back_wrapper"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/circle_bg"
+                android:foreground="?attr/selectableItemBackgroundBorderless"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/btn_back"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:text="&lt;"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:textColor="@color/circle_symbol"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/forward_wrapper"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/circle_bg"
+                android:foreground="?attr/selectableItemBackgroundBorderless"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/btn_forward"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:text="&gt;"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:textColor="@color/circle_symbol"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </FrameLayout>
+        </LinearLayout>
     </LinearLayout>
 
-</LinearLayout>
+    <!-- Overlay suggestion list (appears above bottom bar) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/suggestion_list"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="48dp"
+        android:visibility="gone"
+        android:background="@android:color/white"
+        android:elevation="4dp" />
+</FrameLayout>
