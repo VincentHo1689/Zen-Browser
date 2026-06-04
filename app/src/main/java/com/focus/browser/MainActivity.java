@@ -34,6 +34,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -49,6 +50,7 @@ import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
+    private SwipeRefreshLayout swipeRefreshLayout;
     private WebView webView;
     private EditText urlBar;
     private TextView timerView;
@@ -73,6 +75,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        swipeRefreshLayout = findViewById(R.id.swipe_refresh_layout);
+
+        // Sets up the pull down pull gesture to reload the page
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            webView.reload();
+        });
 
         bookmarksDb = new BookmarksDbHelper(this);
 
@@ -108,6 +117,15 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                // Stops the pulling animation loading wheel cleanly when the data arrives
+                if (swipeRefreshLayout != null) {
+                    swipeRefreshLayout.setRefreshing(false);
+                }
+            }
+
+            @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 String safeUrl = enforceSafeSearch(url);
                 if (!safeUrl.equals(url)) {
@@ -119,7 +137,9 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
+                String url = request.getUrl().toString().toLowerCase();
+                
+                // FIX: Block network-wide video delivery endpoints immediately
                 if (isAdBlocked(url) || isVideoUrl(url)) {
                     return new WebResourceResponse("text/plain", "utf-8",
                             new ByteArrayInputStream(new byte[0]));
@@ -132,17 +152,22 @@ public class MainActivity extends AppCompatActivity {
         urlBar.setText("https://www.google.com");
 
         // Handle focus changes (Fade timer out, URL bar goes full width)
+        // Handle focus changes (Fade timer out, URL bar goes full width)
         urlBar.setOnFocusChangeListener((v, hasFocus) -> {
             isEditingUrl = hasFocus;
             updateTimerVisibility(hasFocus);
         });
 
+        // FIX: Triggers selection exclusively when a user manually interacts via tap
+        urlBar.setOnClickListener(v -> {
+            urlBar.selectAll();
+        });
+
+        // Remove the call to updateTimerVisibility from inside afterTextChanged to stop the cursor loop reset 
         urlBar.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override public void afterTextChanged(Editable s) {
-                updateTimerVisibility(urlBar.hasFocus());
-            }
+            @Override public void afterTextChanged(Editable s) {}
         });
 
         btnBack.setOnClickListener(v -> { if (webView.canGoBack()) webView.goBack(); });
@@ -155,6 +180,9 @@ public class MainActivity extends AppCompatActivity {
                 String input = urlBar.getText().toString().trim();
                 if (!input.isEmpty()) {
                     webView.loadUrl(formatUrl(input));
+                } else {
+                    // FIX: Gracefully fall back to standard landing domain if string is blank
+                    webView.loadUrl("https://www.google.com");
                 }
                 urlBar.clearFocus();
                 return true;
@@ -551,6 +579,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setBuiltInZoomControls(true);
         settings.setDisplayZoomControls(false);
         settings.setLoadsImagesAutomatically(true);
+        webView.setOnLongClickListener(v -> true);
     }
 
     private boolean isAdBlocked(String url) {
@@ -573,8 +602,12 @@ public class MainActivity extends AppCompatActivity {
     private boolean isVideoUrl(String url) {
         String lower = url.toLowerCase();
         return lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".3gp")
-                || lower.contains(".m3u8") || lower.contains("/videoplayback?")
-                || lower.contains("youtube.com/get_video");
+                || lower.endsWith(".m3u8") || lower.endsWith(".mov") || lower.endsWith(".avi") 
+                || lower.endsWith(".ts") || lower.endsWith(".flv")
+                || lower.contains("/videoplayback?") || lower.contains("youtube.com") 
+                || lower.contains("youtu.be") || lower.contains("vimeo.com") 
+                || lower.contains("dailymotion.com") || lower.contains("/video/") 
+                || lower.contains(".stream") || lower.contains("/stream/");
     }
 
     private void loadBlocklistsInBackground() {
