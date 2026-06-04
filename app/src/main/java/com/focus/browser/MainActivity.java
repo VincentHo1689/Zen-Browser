@@ -347,13 +347,13 @@ public class MainActivity extends AppCompatActivity {
 
     // ---- Suggestions ----
     private void setupSuggestionRecyclerView() {
-        suggestionAdapter = new SuggestionAdapter(item -> {
+        suggestionAdapter = new SuggestionAdapter(suggestionList, item -> {
             webView.loadUrl(formatUrl(item));
             urlBar.clearFocus();
         });
         suggestionList.setLayoutManager(new LinearLayoutManager(this));
         suggestionList.setAdapter(suggestionAdapter);
-        // Set background color based on theme
+        // Dark/light background
         boolean isDark = (getResources().getConfiguration().uiMode &
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
         suggestionList.setBackgroundColor(isDark ? Color.parseColor("#1E1E1E") : Color.WHITE);
@@ -462,12 +462,12 @@ public class MainActivity extends AppCompatActivity {
         actionButtons.setLayoutParams(actionParams);
 
         ImageView addBtn = new ImageView(this);
-        addBtn.setImageResource(android.R.drawable.ic_menu_add);
-        addBtn.setPadding(12, 12, 12, 12);
+        addBtn.setImageResource(R.drawable.ic_minimalist_add);
+        addBtn.setPadding(12, 2, 12, 2);
         if (isDarkMode) addBtn.setColorFilter(Color.WHITE);
         ImageView deleteBtn = new ImageView(this);
-        deleteBtn.setImageResource(android.R.drawable.ic_menu_delete);
-        deleteBtn.setPadding(12, 12, 12, 12);
+        deleteBtn.setImageResource(R.drawable.ic_minimalist_delete);
+        deleteBtn.setPadding(12, 2, 12, 2);
         if (isDarkMode) deleteBtn.setColorFilter(Color.WHITE);
         actionButtons.addView(addBtn);
         actionButtons.addView(deleteBtn);
@@ -509,18 +509,17 @@ public class MainActivity extends AppCompatActivity {
             row.setPadding(8, 12, 8, 12);
 
             ImageView selectIcon = new ImageView(this);
-            selectIcon.setLayoutParams(new LinearLayout.LayoutParams(iconSize, iconSize));
-            selectIcon.setImageResource(android.R.drawable.checkbox_off_background);
-            selectIcon.setColorFilter(Color.GRAY);
+            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(iconSize, iconSize);
+            iconParams.gravity = Gravity.CENTER_VERTICAL;  // <-- add this
+            selectIcon.setLayoutParams(iconParams);
+            selectIcon.setImageResource(R.drawable.ic_checkbox_off);
             selectIcon.setOnClickListener(v -> {
                 if (selectedIds.contains(bm.id)) {
                     selectedIds.remove(bm.id);
-                    selectIcon.setImageResource(android.R.drawable.checkbox_off_background);
-                    selectIcon.setColorFilter(Color.GRAY);
+                    selectIcon.setImageResource(R.drawable.ic_checkbox_off);
                 } else {
                     selectedIds.add(bm.id);
-                    selectIcon.setImageResource(android.R.drawable.checkbox_on_background);
-                    selectIcon.setColorFilter(ContextCompat.getColor(this, R.color.timer_red));
+                    selectIcon.setImageResource(R.drawable.ic_checkbox_on);
                 }
             });
 
@@ -530,6 +529,7 @@ public class MainActivity extends AppCompatActivity {
             tv.setEllipsize(TextUtils.TruncateAt.END);
             tv.setTextSize(16);
             tv.setPadding(24, 0, 16, 0);
+            tv.setGravity(Gravity.CENTER_VERTICAL);
             row.addView(selectIcon);
             row.addView(tv);
             listContainer.addView(row);
@@ -839,14 +839,14 @@ public class MainActivity extends AppCompatActivity {
     
 
     private boolean isVideoUrl(String url) {
-        String lower = url.toLowerCase();
-        return lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".3gp")
-                || lower.endsWith(".m3u8") || lower.endsWith(".mov") || lower.endsWith(".avi") 
-                || lower.endsWith(".ts") || lower.endsWith(".flv")
-                || lower.contains("/videoplayback?") || lower.contains("youtube.com") 
-                || lower.contains("youtu.be") || lower.contains("vimeo.com") 
-                || lower.contains("dailymotion.com") || lower.contains("/video/") 
-                || lower.contains(".stream") || lower.contains("/stream/");
+    String lower = url.toLowerCase();
+    // Block only video file extensions and stream endpoints
+    return lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".3gp")
+            || lower.endsWith(".m3u8") || lower.endsWith(".mov") || lower.endsWith(".avi")
+            || lower.endsWith(".ts") || lower.endsWith(".flv")
+            || lower.contains("videoplayback")        // YouTube video stream
+            || lower.contains("googlevideo.com/videoplayback")
+            || lower.contains("manifest.googlevideo.com");  // YouTube DRM manifest
     }
 
     private float dstPx(int dp) { return dp * getResources().getDisplayMetrics().density; }
@@ -868,7 +868,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         if (urlBar.hasFocus()) {
-            urlBar.clearFocus(); // unfocus, restore URL
+            urlBar.clearFocus(); // automatically dismisses keyboard, restores URL
         } else if (webView.canGoBack()) {
             webView.goBack();
         } else {
