@@ -1,4 +1,4 @@
-# Focus Browser
+# Zen Browser
 
 A **minimal, no‑distraction browser** built for productivity.
 Everything is hardcoded – there are no settings, no toggles, and no way to bypass the restrictions.
@@ -14,11 +14,11 @@ Everything is hardcoded – there are no settings, no toggles, and no way to byp
 
 ## Intuitive
 
-This browser is a very lightweight browser for user who wants a browser with minimal distraction, I got this idea from the no browser, however no browser seems outdated and some of the things like the even the javascript is not working, whats why I made this, mainly for myself and i hope that it could help someone who needs it. For the hardcoded function this is because, I am a person without any self controls, the more setting i allow for myself, i just couldne focus, that browser nowadays just have too many toggles and too many settings for us, so I am making this so I could just use it for doing productivity things, and all other things is blocked.
+This browser is a very lightweight browser for user who wants a browser with minimal distraction, I got this idea from the no browser, however no browser seems outdated and some of the things like the even the javascript is not working, whats why I made this, mainly for myself and i hope that it could help someone who needs it. For the hardcoded function this is because, I am a person without any self controls, the more setting i allow for myself, i just couldne Zen, that browser nowadays just have too many toggles and too many settings for us, so I am making this so I could just use it for doing productivity things, and all other things is blocked.
 
 ## Why this browser?
 
-I built this to stay focused while working.
+I built this to stay Zened while working.
 
 - **No videos** means no YouTube, no embedded clips, no distractions.
 - **Blocklists are hardcoded** – you cannot accidentally (or intentionally) turn them off.
@@ -27,19 +27,11 @@ I built this to stay focused while working.
 
 If you need a browser that helps you concentrate, this is it.
 
-## Installation
-
-Download the latest APK from the [Releases](https://github.com/yourusername/FocusBrowser/releases) page and install it on any Android device (version 5.0+).
-
-## Screenshots
-
-_(Add screenshots here if you like)_
-
 ## Building from source
 
 ```bash
-git clone https://github.com/yourusername/FocusBrowser.git
-cd FocusBrowser
+git clone https://github.com/VincentHo1689/Zen-Browser.git
+cd Zen-Browser
 ./gradlew assembleDebug
 ```
 
