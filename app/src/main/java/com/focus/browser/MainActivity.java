@@ -8,8 +8,6 @@ package com.zen.browser;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
@@ -25,15 +23,11 @@ import android.text.TextWatcher;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.text.Spanned;
-import android.text.format.Formatter;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.WebView.HitTestResult;
-import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -58,10 +52,10 @@ import org.json.JSONArray;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
-import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -72,8 +66,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
@@ -159,11 +151,20 @@ public class MainActivity extends AppCompatActivity {
 
         // Setup swipe refresh
         swipeRefreshLayout.setOnRefreshListener(() -> webView.reload());
+        webView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            swipeRefreshLayout.setEnabled(scrollY == 0);
+        });
 
         bookmarksDb = new BookmarksDbHelper(this);
 
         setupWebView();
         loadBlocklistsInBackground();
+        Set<String> manualDomains = new HashSet<>(Arrays.asList(
+            "ytimg.com"
+        ));
+        synchronized (blocklists) {
+            blocklists.put("custom", manualDomains);
+        }
         setupSuggestionRecyclerView();
 
         // QR button action (placeholder – launch a QR scanner)
@@ -213,19 +214,33 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                String safeUrl = enforceSafeSearch(url);
-                if (!safeUrl.equals(url)) {
-                    view.loadUrl(safeUrl);
-                    return true;
+                if (url.startsWith("tel:") || url.startsWith("mailto:") || 
+                    url.startsWith("sms:") || url.startsWith("geo:")) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        view.getContext().startActivity(intent);
+                        return true; // We handled it, stop WebView
+                    } catch (Exception e) {
+                        return true; // App failed to open, block it to avoid crash
+                    }
                 }
-                return false;
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    String safeUrl = enforceSafeSearch(url);
+                    if (!safeUrl.equals(url)) {
+                        view.loadUrl(safeUrl);
+                        return true; 
+                    }
+                    return false; 
+                }
+                return true;
             }
 
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString().toLowerCase();
-                if (isVideoUrl(url)) {
-                    return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream(new byte[0]));
+                if (isVideoUrlBlock(url)) {
+                    view.post(() -> injectZenController(view));
+                    //return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream(new byte[0]));
                 }
 
                 // Check blocklists and show custom blocked page
@@ -237,8 +252,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        webView.loadUrl("https://www.google.com");
-        setUrlTextWithColoredProtocol("https://www.google.com");
+        webView.loadUrl("https://www.google.com/search?q=&pws=0&safe=active");
+        setUrlTextWithColoredProtocol("https://www.google.com/search?q=&pws=0&safe=active");
 
         // --- URL bar focus handling (keyboard, QR, back/forward) ---
         urlBar.setOnFocusChangeListener((v, hasFocus) -> {
@@ -325,7 +340,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!input.isEmpty()) {
                     webView.loadUrl(formatUrl(input));
                 } else {
-                    webView.loadUrl("https://www.google.com");
+                    webView.loadUrl("https://www.google.com/webhp?pws=0&safe=active");
                 }
                 urlBar.clearFocus();
                 return true;
@@ -465,11 +480,38 @@ public class MainActivity extends AppCompatActivity {
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
         String bgColor = isDark ? "#211f27" : "#f8f7f4";
         String textColor = isDark ? "#dddddd" : "#211f27";
+        String mutedColor = isDark ? "#888888" : "#999999";
         String names = TextUtils.join(", ", blockingLists);
+        // String html = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
+        //         "<style>body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: " + bgColor + "; color: " + textColor + "; } " +
+        //         "div { text-align: center; padding: 20px; } h2 { font-size: 20px; } p { font-size: 14px; }</style></head>" +
+        //         "<body><div><h2>Blocked</h2><p>This page is blocked by: <b>" + names + "</b></p></div></body></html>";
         String html = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
-                "<style>body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: " + bgColor + "; color: " + textColor + "; } " +
-                "div { text-align: center; padding: 20px; } h2 { font-size: 20px; } p { font-size: 14px; }</style></head>" +
-                "<body><div><h2>Blocked</h2><p>This page is blocked by: <b>" + names + "</b></p></div></body></html>";
+            "<style>" +
+            "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; " +
+            "display: flex; flex-direction: column; justify-content: center; align-items: center; " +
+            "height: 100vh; margin: 0; background: " + bgColor + "; color: " + textColor + "; text-align: center; }" +
+            ".content-wrapper { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }" +
+            ".footer { padding-bottom: 50px; width: 100%; }" +
+            "h2 { font-weight: 300; font-size: 28px; margin-bottom: 12px; }" +
+            "p { color: " + mutedColor + "; font-size: 16px; margin: 0; }" +
+            ".reason { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: " + mutedColor + "; " +
+            "margin-top: 20px; opacity: 0.5; text-transform: uppercase; }" +
+            "button { background: transparent; border: 1px solid " + textColor + "; color: " + textColor + "; " +
+            "padding: 12px 30px; border-radius: 25px; cursor: pointer; font-size: 14px; " +
+            "transition: all 0.3s ease; outline: none; }" +
+            "button:active { background: " + textColor + "; color: " + bgColor + "; }" +
+            "</style></head>" +
+            "<body>" +
+            "<div class='content-wrapper'>" +
+            "  <h2>Take a deep breath.</h2>" +
+            "  <p>Your focus matters.</p>" +
+            "</div>" +
+            "<div class='footer'>" +
+            "  <button onclick='history.back()'>Continue my focus</button>" +
+            "  <div class='reason'>Protected from: " + names + "</div>" +
+            "</div>" +
+            "</body></html>";
         return new WebResourceResponse("text/html", "utf-8", new ByteArrayInputStream(html.getBytes()));
     }
 
@@ -712,6 +754,7 @@ public class MainActivity extends AppCompatActivity {
                 TextView empty = new TextView(this);
                 empty.setText("No downloads yet");
                 empty.setPadding(16, 16, 16, 16);
+                empty.setGravity(Gravity.CENTER);
                 list.addView(empty);
             }
             cursor.close();
@@ -857,7 +900,7 @@ public class MainActivity extends AppCompatActivity {
     // ---- Helpers ----
     private String formatUrl(String input) {
         input = input.trim();
-        if (input.isEmpty()) return "https://www.google.com";
+        if (input.isEmpty()) return "https://www.google.com/webhp?pws=0&safe=active";
         if (URL_PATTERN.matcher(input).matches()) {
             if (!input.startsWith("http://") && !input.startsWith("https://"))
                 input = "https://" + input;
@@ -874,7 +917,7 @@ public class MainActivity extends AppCompatActivity {
         if (lower.startsWith("https://")) {
             color = ContextCompat.getColor(this, R.color.timer_green);  // green
         } else if (lower.startsWith("http://")) {
-            color = Color.RED;    // red
+            color = ContextCompat.getColor(this, R.color.timer_red);    // red
         } else {
             urlBar.setText(fullUrl);
             return;
@@ -914,21 +957,54 @@ public class MainActivity extends AppCompatActivity {
                 if (path != null && path.startsWith("/search")) {
                     String query = uri.getQuery();
                     if (query == null) query = "";
+
+                    // 1. Handle SafeSearch
                     if (!query.contains("safe=")) {
-                        String newQuery = query.isEmpty() ? "safe=active" : query + "&safe=active";
-                        return uri.buildUpon().encodedQuery(newQuery).build().toString();
+                        query = query.isEmpty() ? "safe=active" : query + "&safe=active";
                     } else if (!query.contains("safe=active") && !query.contains("safe=moderate")) {
-                        String newQuery = query.replaceAll("safe=[^&]*", "safe=active");
-                        return uri.buildUpon().encodedQuery(newQuery).build().toString();
+                        query = query.replaceAll("safe=[^&]*", "safe=active");
                     }
+
+                    // 2. Add Personalization Removal (pws=0)
+                    if (!query.contains("pws=0")) {
+                        query += "&pws=0";
+                    }
+
+                    return uri.buildUpon().encodedQuery(query).build().toString();
                 }
             }
         } catch (Exception ignored) {}
         return url;
     }
 
-    private boolean isVideoUrl(String url) {
+    private static final Set<String> TRUSTED_DOMAINS = new HashSet<>(Arrays.asList(
+        "wikipedia.org", "notion.so", "github.com", "stackoverflow.com", "khanacademy.org", "overleaf.com","scholar.google.com","researchgate.net"
+    ));
+
+    private boolean isTrustedSite(String url) {
+        if (url == null || url.isEmpty()) return false;
+        
+        try {
+            java.net.URL parsedUrl = new java.net.URL(url);
+            String host = parsedUrl.getHost().toLowerCase();
+            String[] trustedTLDs = { ".edu", ".edu.hk", ".ac.uk", ".gov", ".gov.hk" };
+            for (String tld : trustedTLDs) {
+                if (host.endsWith(tld)) return true;
+            }
+            for (String trusted : TRUSTED_DOMAINS) {
+                if (host.contains(trusted)) return true;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
+    }
+
+    private boolean isVideoUrlBlock(String url) {
     String lower = url.toLowerCase();
+    if (isTrustedSite(lower)) {
+        return false; 
+    }
     // Block only video file extensions and stream endpoints
     return lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".3gp")
             || lower.endsWith(".m3u8") || lower.endsWith(".mov") || lower.endsWith(".avi")
@@ -940,6 +1016,38 @@ public class MainActivity extends AppCompatActivity {
 
     private float dstPx(int dp) { return dp * getResources().getDisplayMetrics().density; }
     private float getPopupCornerRadiusFixer() { return dstPx(16); }
+
+    private void injectZenController(WebView view) {
+        String js = "window.ZenController = {" +
+                    "  hideVideo: function() {" +
+                    "    var videos = document.querySelectorAll('video');" +
+                    "    videos.forEach(function(v) {" +
+                    "      v.style.opacity = '0';" +
+                    "      v.style.pointerEvents = 'none';" +
+                    "      v.play();" + // Ensure audio keeps playing
+                    "      var msg = document.createElement('div');" +
+                    "      msg.innerText = 'Visuals blocked in Zen Browser';" +
+                    "      msg.style.position = 'absolute';" +
+                    "      msg.style.top = '50%';" +
+                    "      msg.style.left = '50%';" +
+                    "      msg.style.transform = 'translate(-50%, -50% z-index: 9999';" +
+                    "      msg.style.color = 'white';" +
+                    "      msg.style.background = 'rgba(0,0,0,0.7)';" +
+                    "      msg.style.padding = '10px 20px';" +
+                    "      msg.style.borderRadius = '5px';" +
+                    "      msg.style.pointerEvents = 'none';" +
+                    "      v.parentElement.appendChild(msg);" +
+                    "      var observer = new MutationObserver(function(mutations) {" +
+                    "        if (v.style.opacity !== '0') { v.style.opacity = '0'; v.play(); }" +
+                    "      });" +
+                    "      observer.observe(v, { attributes: true, attributeFilter: ['style'] });" +
+                    "    });" +
+                    "  }" +
+                    "};" +
+                    "window.ZenController.hideVideo();";
+        
+        view.evaluateJavascript(js, null);
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     private void setupWebView() {

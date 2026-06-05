@@ -4,7 +4,7 @@
     <color name="input_field_bg">#302f37</color>
     <color name="address_bar_text">#f8f7f4</color>
     <color name="circle_symbol">#f8f7f4</color>
-    <color name="timer_green">#8bbe7f</color>
-    <color name="timer_yellow">#e3c28d</color>
-    <color name="timer_red">#da9fa5</color>
+    <color name="timer_green">#5B7E3C</color>
+    <color name="timer_yellow">#FFD65A</color>
+    <color name="timer_red">#EA5252</color>
 </resources>
