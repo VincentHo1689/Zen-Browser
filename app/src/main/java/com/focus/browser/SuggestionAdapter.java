@@ -1,4 +1,4 @@
-package com.focus.browser;
+package com.zen.browser;
 
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -21,7 +21,7 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
         this.listener = listener;
         boolean isDark = (parentView.getContext().getResources().getConfiguration().uiMode
                 & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-        this.textColor = isDark ? Color.WHITE : Color.BLACK;
+        this.textColor = isDark ? Color.parseColor("#f8f7f4") : Color.parseColor("#211f27");
     }
 
     public void setSuggestions(List<String> newList) {

@@ -90,8 +90,8 @@
                                             <option name="values">
                                               <map>
                                                 <entry key="color" value="000000" />
-                                                <entry key="imagePath" value="$USER_HOME$/Downloads/earth.png" />
-                                                <entry key="scalingPercent" value="38" />
+                                                <entry key="imagePath" value="$USER_HOME$/Downloads/zen (1).png" />
+                                                <entry key="scalingPercent" value="45" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -167,7 +167,8 @@
                                   </option>
                                   <option name="values">
                                     <map>
-                                      <entry key="backgroundColor" value="d1dec0" />
+                                      <entry key="backgroundAssetType" value="COLOR" />
+                                      <entry key="backgroundColor" value="d8d9c4" />
                                     </map>
                                   </option>
                                 </PersistentState>

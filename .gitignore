@@ -1,2 +1,8 @@
 .gradle/
 build/
+.DS_Store
+.idea/
+*.iml
+*.log
+*.apk
+*.keystore

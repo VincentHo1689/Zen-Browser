@@ -1,4 +1,9 @@
-package com.focus.browser;
+/**
+ * App icon: "Zen icons created by Freepik - Flaticon"
+ * https://www.flaticon.com/free-icons/zen
+ */
+
+package com.zen.browser;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
@@ -144,9 +149,9 @@ public class MainActivity extends AppCompatActivity {
         boolean isDark = (getResources().getConfiguration().uiMode &
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
         if (isDark) {
-            qrButton.setColorFilter(Color.WHITE);
-            btnBack.setColorFilter(Color.WHITE);
-            btnForward.setColorFilter(Color.WHITE);
+            qrButton.setColorFilter(Color.parseColor("#f8f7f4"));
+            btnBack.setColorFilter(Color.parseColor("#f8f7f4"));
+            btnForward.setColorFilter(Color.parseColor("#f8f7f4"));
         }
         backWrapper = findViewById(R.id.back_wrapper);
         forwardWrapper = findViewById(R.id.forward_wrapper);
@@ -380,7 +385,7 @@ public class MainActivity extends AppCompatActivity {
         // Dark/light background
         boolean isDark = (getResources().getConfiguration().uiMode &
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
-        suggestionList.setBackgroundColor(isDark ? Color.parseColor("#1E1E1E") : Color.WHITE);
+        suggestionList.setBackgroundColor(isDark ? Color.parseColor("#211f27") : Color.parseColor("#f8f7f4"));
     }
 
     private void fetchSuggestions(String query) {
@@ -458,8 +463,8 @@ public class MainActivity extends AppCompatActivity {
     private WebResourceResponse generateBlockPage(List<String> blockingLists) {
         boolean isDark = (getResources().getConfiguration().uiMode &
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
-        String bgColor = isDark ? "#121212" : "#FFFFFF";
-        String textColor = isDark ? "#E0E0E0" : "#000000";
+        String bgColor = isDark ? "#211f27" : "#f8f7f4";
+        String textColor = isDark ? "#dddddd" : "#211f27";
         String names = TextUtils.join(", ", blockingLists);
         String html = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
                 "<style>body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: " + bgColor + "; color: " + textColor + "; } " +
@@ -478,7 +483,7 @@ public class MainActivity extends AppCompatActivity {
 
         boolean isDarkMode = (getResources().getConfiguration().uiMode &
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
-        int titleTextColor = isDarkMode ? Color.WHITE : Color.BLACK;
+        int titleTextColor = isDarkMode ? Color.parseColor("#dddddd") : Color.parseColor("#211f27");
 
         // Title bar with add/delete
         android.widget.RelativeLayout titleBar = new android.widget.RelativeLayout(this);
@@ -506,11 +511,11 @@ public class MainActivity extends AppCompatActivity {
         ImageView addBtn = new ImageView(this);
         addBtn.setImageResource(R.drawable.ic_minimalist_add);
         addBtn.setPadding(12, 2, 12, 2);
-        if (isDarkMode) addBtn.setColorFilter(Color.WHITE);
+        if (isDarkMode) addBtn.setColorFilter(Color.parseColor("#dddddd"));
         ImageView deleteBtn = new ImageView(this);
         deleteBtn.setImageResource(R.drawable.ic_minimalist_delete);
         deleteBtn.setPadding(12, 2, 12, 2);
-        if (isDarkMode) deleteBtn.setColorFilter(Color.WHITE);
+        if (isDarkMode) deleteBtn.setColorFilter(Color.parseColor("#dddddd"));
         actionButtons.addView(addBtn);
         actionButtons.addView(deleteBtn);
         titleBar.addView(actionButtons);
@@ -594,7 +599,7 @@ public class MainActivity extends AppCompatActivity {
         android.util.TypedValue typedValue = new android.util.TypedValue();
         getTheme().resolveAttribute(android.R.attr.windowBackground, typedValue, true);
         int bg = (typedValue.type >= android.util.TypedValue.TYPE_FIRST_COLOR_INT &&
-                typedValue.type <= android.util.TypedValue.TYPE_LAST_COLOR_INT) ? typedValue.data : Color.WHITE;
+                typedValue.type <= android.util.TypedValue.TYPE_LAST_COLOR_INT) ? typedValue.data : Color.parseColor("#f8f7f4");
         shape.setColor(bg);
         container.setBackground(shape);
 
@@ -635,7 +640,7 @@ public class MainActivity extends AppCompatActivity {
 
         boolean isDark = (getResources().getConfiguration().uiMode &
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
-        int textColor = isDark ? Color.WHITE : Color.BLACK;
+        int textColor = isDark ? Color.parseColor("#dddddd") : Color.parseColor("#211f27");
 
         TextView title = new TextView(this);
         title.setText("Downloads");
@@ -719,7 +724,7 @@ public class MainActivity extends AppCompatActivity {
         android.util.TypedValue typedValue = new android.util.TypedValue();
         getTheme().resolveAttribute(android.R.attr.windowBackground, typedValue, true);
         int bg = (typedValue.type >= android.util.TypedValue.TYPE_FIRST_COLOR_INT &&
-                typedValue.type <= android.util.TypedValue.TYPE_LAST_COLOR_INT) ? typedValue.data : Color.WHITE;
+                typedValue.type <= android.util.TypedValue.TYPE_LAST_COLOR_INT) ? typedValue.data : Color.parseColor("#f8f7f4");
         shape.setColor(bg);
         container.setBackground(shape);
 
