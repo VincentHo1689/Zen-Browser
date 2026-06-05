@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="address_bar_bg">#ACC4B3</color>
+    <color name="address_bar_bg">#EBFFD8</color>
     <color name="input_field_bg">#FFFFFF</color>
     <color name="address_bar_text">#000000</color>
     <color name="circle_symbol">#000000</color>

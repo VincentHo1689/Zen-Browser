@@ -17,9 +17,14 @@ import android.os.SystemClock;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
+import android.text.Spanned;
+import android.text.format.Formatter;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView.HitTestResult;
@@ -56,11 +61,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
@@ -104,6 +112,13 @@ public class MainActivity extends AppCompatActivity {
     private ActivityResultLauncher<ScanOptions> qrScanLauncher;
     private boolean isLongPressFocus = false;
 
+    private final Map<String, List<String>> suggestionCache = new LinkedHashMap<String, List<String>>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry eldest) {
+            return size() > 50;
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -123,13 +138,15 @@ public class MainActivity extends AppCompatActivity {
         urlBar = findViewById(R.id.url_bar);
         timerView = findViewById(R.id.timer);
         progressBar = findViewById(R.id.progress_bar);
-        TextView btnBack = findViewById(R.id.btn_back);
-        TextView btnForward = findViewById(R.id.btn_forward);
+        ImageView btnBack = findViewById(R.id.btn_back_image);
+        ImageView btnForward = findViewById(R.id.btn_forward_image);
         qrButton = findViewById(R.id.btn_qr);
         boolean isDark = (getResources().getConfiguration().uiMode &
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
         if (isDark) {
             qrButton.setColorFilter(Color.WHITE);
+            btnBack.setColorFilter(Color.WHITE);
+            btnForward.setColorFilter(Color.WHITE);
         }
         backWrapper = findViewById(R.id.back_wrapper);
         forwardWrapper = findViewById(R.id.forward_wrapper);
@@ -173,9 +190,9 @@ public class MainActivity extends AppCompatActivity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
-                lastLoadedUrl = url;   // <-- ADD THIS LINE
+                lastLoadedUrl = url;
                 if (!isEditingUrl) {
-                    urlBar.setText(url);
+                    setUrlTextWithColoredProtocol(url);
                     updateTimerVisibility(false);
                 }
             }
@@ -184,6 +201,9 @@ public class MainActivity extends AppCompatActivity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 swipeRefreshLayout.setRefreshing(false);
+                if (!isEditingUrl) {
+                    setUrlTextWithColoredProtocol(url);
+                }
             }
 
             @Override
@@ -213,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         webView.loadUrl("https://www.google.com");
-        urlBar.setText("https://www.google.com");
+        setUrlTextWithColoredProtocol("https://www.google.com");
 
         // --- URL bar focus handling (keyboard, QR, back/forward) ---
         urlBar.setOnFocusChangeListener((v, hasFocus) -> {
@@ -235,11 +255,13 @@ public class MainActivity extends AppCompatActivity {
                 backWrapper.setVisibility(View.GONE);
                 forwardWrapper.setVisibility(View.GONE);
                 qrButton.setVisibility(View.VISIBLE);
-                suggestionList.setVisibility(View.VISIBLE);
+                if (urlBar.getText().length() > 0) {
+                    suggestionList.setVisibility(View.VISIBLE);
+                }
             } else {
                 // Restore URL if user didn't type anything
                 if (urlBar.getText().toString().trim().isEmpty()) {
-                    urlBar.setText(lastLoadedUrl);
+                    setUrlTextWithColoredProtocol(lastLoadedUrl);
                 }
                 backWrapper.setVisibility(View.VISIBLE);
                 forwardWrapper.setVisibility(View.VISIBLE);
@@ -276,8 +298,10 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override public void afterTextChanged(Editable s) {
                 if (isEditingUrl && s.length() > 0) {
+                    suggestionList.setVisibility(View.VISIBLE);
                     fetchSuggestions(s.toString());
                 } else {
+                    suggestionList.setVisibility(View.GONE);
                     suggestionAdapter.setSuggestions(new ArrayList<>());
                 }
             }
@@ -360,9 +384,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void fetchSuggestions(String query) {
+        String key = query.trim().toLowerCase();
+
+        // 1. Show cached results immediately
+        List<String> cached = suggestionCache.get(key);
+        if (cached != null) {
+            suggestionAdapter.setSuggestions(cached);
+        }
+
+        // 2. Debounced network fetch
         suggestionHandler.removeCallbacks(suggestionFetcher);
         suggestionFetcher = () -> {
-            // Run network on background thread
             executor.execute(() -> {
                 List<String> results = new ArrayList<>();
                 try {
@@ -382,15 +414,22 @@ public class MainActivity extends AppCompatActivity {
                         for (int i = 0; i < suggArr.length(); i++) {
                             results.add(suggArr.getString(i));
                         }
+                        // 3. Cache the fresh response
+                        synchronized (suggestionCache) {
+                            suggestionCache.put(key, results);
+                        }
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    return;  // keep whatever we already showed (cached)
                 }
-                List<String> finalResults = results;
-                runOnUiThread(() -> suggestionAdapter.setSuggestions(finalResults));
+                // 4. Update UI only if the input still matches
+                String currentQuery = urlBar.getText().toString().trim().toLowerCase();
+                if (currentQuery.equals(key)) {
+                    runOnUiThread(() -> suggestionAdapter.setSuggestions(results));
+                }
             });
         };
-        suggestionHandler.postDelayed(suggestionFetcher, 300);
+        suggestionHandler.postDelayed(suggestionFetcher, 200);  // slightly faster debounce
     }
 
     // ---- Blocking ----
@@ -433,6 +472,9 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout container = new LinearLayout(this);
         container.setOrientation(LinearLayout.VERTICAL);
         container.setPadding(24, 24, 24, 40);
+        container.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT));
 
         boolean isDarkMode = (getResources().getConfiguration().uiMode &
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
@@ -476,6 +518,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Scrollable list
         ScrollView scroll = new ScrollView(this);
+        LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);   // height=0, weight=1 → fill remaining
+        scroll.setLayoutParams(scrollParams);
         LinearLayout listContainer = new LinearLayout(this);
         listContainer.setOrientation(LinearLayout.VERTICAL);
 
@@ -487,17 +532,23 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setView(container)
                 .create();
-        if (dialog.getWindow() != null)
+        if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
         dialog.setOnShowListener(dialogInterface -> {
+            // Set the window size first
             int screenWidth = getResources().getDisplayMetrics().widthPixels;
             int screenHeight = getResources().getDisplayMetrics().heightPixels;
+            int dialogWidth = (int)(screenWidth * 0.8);
+            int dialogHeight = (int)(screenHeight * 0.65);
             if (dialog.getWindow() != null) {
-                dialog.getWindow().setLayout(
-                        (int)(screenWidth * 0.8),
-                        (int)(screenHeight * 0.65)
-                );
+                dialog.getWindow().setLayout(dialogWidth, dialogHeight);
             }
+            // Force the container to match the dialog height
+            ViewGroup.LayoutParams params = container.getLayoutParams();
+            params.height = dialogHeight;
+            container.setLayoutParams(params);
+            container.requestLayout();
         });
         dialog.setCanceledOnTouchOutside(true);
         dialogHolder[0] = dialog;
@@ -576,6 +627,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void showDownloadListPopup() {
         LinearLayout container = new LinearLayout(this);
+        container.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT));
         container.setOrientation(LinearLayout.VERTICAL);
         container.setPadding(24, 24, 24, 40);
 
@@ -592,6 +646,9 @@ public class MainActivity extends AppCompatActivity {
         container.addView(title);
 
         ScrollView scroll = new ScrollView(this);
+        LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
+        scroll.setLayoutParams(scrollParams);
         LinearLayout list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
 
@@ -619,25 +676,30 @@ public class MainActivity extends AppCompatActivity {
                             Toast.makeText(this, "Cannot open file", Toast.LENGTH_SHORT).show();
                         }
                     });
-                    tv.setOnLongClickListener(v -> {
-                        new AlertDialog.Builder(this)
-                                .setTitle("Delete file?")
-                                .setMessage("Remove this download and its file?")
-                                .setPositiveButton("Delete", (dialog, which) -> {
-                                    // Remove from DownloadManager and delete file
-                                    dm.remove(Long.parseLong(cursor.getString(cursor.getColumnIndex(DownloadManager.COLUMN_ID))));
-                                    // Also delete physical file
-                                    try {
-                                        new File(Uri.parse(uri).getPath()).delete();
-                                    } catch (Exception ignored) {}
-                                    Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show();
-                                    dialog.dismiss();
-                                    showDownloadListPopup(); // refresh
-                                })
-                                .setNegativeButton("Cancel", null)
-                                .show();
-                        return true;
-                    });
+                    // Capture download ID now, before cursor is closed
+                final long downloadId = cursor.getLong(cursor.getColumnIndex(DownloadManager.COLUMN_ID));
+                final String localUriStr = uri;
+
+                tv.setOnLongClickListener(v -> {
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Delete download?")
+                            .setMessage("Remove this download and its file?")
+                            .setPositiveButton("Delete", (dialog, which) -> {
+                                if (dm != null) {
+                                    dm.remove(downloadId);
+                                }
+                                // Delete file using ContentResolver
+                                try {
+                                    getContentResolver().delete(Uri.parse(localUriStr), null, null);
+                                } catch (Exception ignored) {}
+                                Toast.makeText(MainActivity.this, "Deleted", Toast.LENGTH_SHORT).show();
+                                dialog.dismiss();
+                                showDownloadListPopup();
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                    return true;
+                });
                     list.addView(tv);
                     
                 } while (cursor.moveToNext());
@@ -662,20 +724,25 @@ public class MainActivity extends AppCompatActivity {
         container.setBackground(shape);
 
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setView(container)
-                .create();
-        if (dialog.getWindow() != null)
+        .setView(container)
+        .create();
+        if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
         dialog.setCanceledOnTouchOutside(true);
+
         dialog.setOnShowListener(dialogInterface -> {
             int screenWidth = getResources().getDisplayMetrics().widthPixels;
             int screenHeight = getResources().getDisplayMetrics().heightPixels;
+            int dialogWidth = (int)(screenWidth * 0.8);
+            int dialogHeight = (int)(screenHeight * 0.65);
             if (dialog.getWindow() != null) {
-                dialog.getWindow().setLayout(
-                        (int)(screenWidth * 0.8),
-                        (int)(screenHeight * 0.65)
-                );
+                dialog.getWindow().setLayout(dialogWidth, dialogHeight);
             }
+            ViewGroup.LayoutParams params = container.getLayoutParams();
+            params.height = dialogHeight;
+            container.setLayoutParams(params);
+            container.requestLayout();
         });
         dialog.show();
     }
@@ -794,6 +861,25 @@ public class MainActivity extends AppCompatActivity {
         return "https://www.google.com/search?q=" + Uri.encode(input) + "&safe=active";
     }
 
+    private void setUrlTextWithColoredProtocol(String fullUrl) {
+        if (fullUrl == null) return;
+        // Only color if it starts with http:// or https://
+        String lower = fullUrl.toLowerCase();
+        int color;
+        if (lower.startsWith("https://")) {
+            color = ContextCompat.getColor(this, R.color.timer_green);  // green
+        } else if (lower.startsWith("http://")) {
+            color = Color.RED;    // red
+        } else {
+            urlBar.setText(fullUrl);
+            return;
+        }
+        SpannableString spannable = new SpannableString(fullUrl);
+        int prefixLen = (lower.startsWith("https://")) ? 8 : 7;
+        spannable.setSpan(new ForegroundColorSpan(color), 0, prefixLen, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        urlBar.setText(spannable);
+    }
+
     private void updateTimerVisibility(boolean urlBarHasFocus) {
         android.view.ViewGroup.LayoutParams urlParams = urlBar.getLayoutParams();
         if (urlParams == null) return;
@@ -835,8 +921,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
         return url;
     }
-
-    
 
     private boolean isVideoUrl(String url) {
     String lower = url.toLowerCase();

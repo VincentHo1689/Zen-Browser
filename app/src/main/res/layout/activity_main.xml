@@ -102,7 +102,16 @@
                 android:foreground="?attr/selectableItemBackgroundBorderless"
                 android:gravity="center">
 
-                <TextView
+                <ImageView
+                    android:id="@+id/btn_back_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/ic_arrow_back"
+                    android:contentDescription="Back"
+                    android:scaleType="center"
+                    android:clickable="true"
+                    android:focusable="true" />
+                <!-- <TextView
                     android:id="@+id/btn_back"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -111,7 +120,7 @@
                     android:gravity="center"
                     android:textColor="@color/circle_symbol"
                     android:clickable="true"
-                    android:focusable="true" />
+                    android:focusable="true" /> -->
             </FrameLayout>
 
             <FrameLayout
@@ -123,7 +132,17 @@
                 android:foreground="?attr/selectableItemBackgroundBorderless"
                 android:gravity="center">
 
-                <TextView
+                <ImageView
+                    android:id="@+id/btn_forward_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/ic_arrow_back"
+                    android:contentDescription="Forward"
+                    android:scaleX="-1"
+                    android:scaleType="center"
+                    android:clickable="true"
+                    android:focusable="true" />
+                <!-- <TextView
                     android:id="@+id/btn_forward"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -132,7 +151,7 @@
                     android:gravity="center"
                     android:textColor="@color/circle_symbol"
                     android:clickable="true"
-                    android:focusable="true" />
+                    android:focusable="true" /> -->
             </FrameLayout>
         </LinearLayout>
     </LinearLayout>
@@ -145,6 +164,5 @@
         android:layout_gravity="bottom"
         android:layout_marginBottom="48dp"
         android:visibility="gone"
-        android:background="@android:color/white"
-        android:elevation="4dp" />
+        android:background="@android:color/white" />
 </FrameLayout>
