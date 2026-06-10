@@ -20,6 +20,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
     // --- UI elements ---
     private SwipeRefreshLayout swipeRefreshLayout;
-    private WebView webView;
+    private NestedScrollWebView webView;
     private EditText urlBar;
     private TextView timerView;
     private ProgressBar progressBar;
@@ -126,10 +127,14 @@ public class MainActivity extends AppCompatActivity {
 
         // Setup swipe refresh
         swipeRefreshLayout.setOnRefreshListener(() -> webView.reload());
-        swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> webView.canScrollVertically(-1));
-        // webView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-        //     swipeRefreshLayout.setEnabled(scrollY == 0);
-        // });
+        swipeRefreshLayout.setOnRefreshListener(() -> webView.reload());
+
+        swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> {
+            if (webView.canScrollVertically(-1)) {
+                return true;
+            }
+            return webView.getScrollY() > 0;
+        });
 
         bookmarksDb = new BookmarksDbHelper(this);
         blocklistManager = new BlocklistManager();
@@ -398,6 +403,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ---- Helpers ----
+    private void clearAllDataExceptCookies() {
+        if (webView != null) {
+            webView.clearCache(true);            // clears cache files (images, js, etc.)
+            webView.clearHistory();              // clears back/forward list
+            webView.clearFormData();             // clears autofill / form entries
+        }
+        // Clear WebView local storage (localStorage, sessionStorage) but not cookies
+        android.webkit.WebStorage.getInstance().deleteAllData();
+        // Optionally delete the WebView’s database if your app uses it
+        deleteDatabase("webview.db");
+        deleteDatabase("webviewCache.db");
+    }
+
     private void setUrlTextWithColoredProtocol(String fullUrl) {
         if (fullUrl == null) return;
         String lower = fullUrl.toLowerCase();
@@ -480,19 +498,19 @@ public class MainActivity extends AppCompatActivity {
         view.evaluateJavascript(js, null);
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
-    private void setupWebView() {
-        WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setLoadWithOverviewMode(true);
-        settings.setUseWideViewPort(true);
-        settings.setBuiltInZoomControls(true);
-        webView.getSettings().setTextZoom(100);
-        settings.setDisplayZoomControls(false);
-        settings.setLoadsImagesAutomatically(true);
-        settings.setMediaPlaybackRequiresUserGesture(false);
-    }
+    // @SuppressLint("SetJavaScriptEnabled")
+    // private void setupWebView() {
+    //     WebSettings settings = webView.getSettings();
+    //     settings.setJavaScriptEnabled(true);
+    //     settings.setDomStorageEnabled(true);
+    //     settings.setLoadWithOverviewMode(true);
+    //     settings.setUseWideViewPort(true);
+    //     settings.setBuiltInZoomControls(true);
+    //     webView.getSettings().setTextZoom(100);
+    //     settings.setDisplayZoomControls(false);
+    //     settings.setLoadsImagesAutomatically(true);
+    //     settings.setMediaPlaybackRequiresUserGesture(false);
+    // }
 
     @Override
     public void onBackPressed() {
@@ -511,9 +529,111 @@ public class MainActivity extends AppCompatActivity {
     }
     @Override protected void onResume() {
         super.onResume();
+        if (webView != null) {
+            webView.onResume();
+        }
         timerManager.resume();
     }
+
+    @Override protected void onStop() {
+        super.onStop();
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private void setupWebView() {
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        settings.setBuiltInZoomControls(true);
+        webView.getSettings().setTextZoom(100);
+        settings.setDisplayZoomControls(false);
+        settings.setLoadsImagesAutomatically(true);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+        
+        settings.setDatabaseEnabled(true);
+
+        // 1. Enable Third-Party Cookies (CRITICAL for cross-domain Google Auth)
+        android.webkit.CookieManager cookieManager = android.webkit.CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.setAcceptThirdPartyCookies(webView, true);
+        // 2. Dynamic User-Agent (Removes the WebView flag instead of hardcoding an older Chrome version)
+        // Hardcoded UAs eventually get flagged by Google's security checks. 
+        String defaultUA = settings.getUserAgentString();
+        settings.setUserAgentString(defaultUA.replace("; wv", ""));
+        // 3. Support Multiple Windows (Google Login often triggers popups)
+        settings.setSupportMultipleWindows(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        
+        String customUA = "Mozilla/5.0 (Linux; Android 13; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
+        settings.setUserAgentString(customUA);
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onProgressChanged(WebView view, int newProgress) {
+                progressBar.setProgress(newProgress);
+                progressBar.setVisibility(newProgress < 100 ? View.VISIBLE : View.GONE);
+            }
+
+            @Override
+            public boolean onJsAlert(WebView view, String url, String message, android.webkit.JsResult result) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setMessage(message)
+                        .setPositiveButton(android.R.string.ok, (dialog, which) -> result.confirm())
+                        .setCancelable(false)
+                        .create()
+                        .show();
+                return true;
+            }
+
+            @Override
+            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, android.os.Message resultMsg) {
+                WebView newWebView = new WebView(MainActivity.this);
+                newWebView.getSettings().setJavaScriptEnabled(true);
+                newWebView.getSettings().setUserAgentString(defaultUA.replace("; wv", ""));
+                
+                // Temporarily add it to your view hierarchy or handle it silently
+                // For a basic implementation, we just route the request through the current WebView
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(newWebView);
+                resultMsg.sendToTarget();
+                
+                newWebView.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
+                        webView.loadUrl(request.getUrl().toString());
+                        return true;
+                    }
+                });
+                return true;
+            }
+        });
+
+        webView.setWebViewClient(new BrowserWebViewClient(this, blocklistManager) {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                
+                // Fine-tuned background playback script that won't capture/kill form submission fields
+                String bgPlayJs = "(function() {" +
+                    "  Object.defineProperty(document, 'hidden', { get: function() { return false; }, configurable: true });" +
+                    "  Object.defineProperty(document, 'visibilityState', { get: function() { return 'visible'; }, configurable: true });" +
+                    "  // Dispatch a fake visibilitychange event every 1 second to force event-driven checks" +
+                    "  setInterval(function() {" +
+                    "    var evt = new Event('visibilitychange');" +
+                    "    document.dispatchEvent(evt);" +
+                    "  }, 1000);" +
+                    "})();";
+                view.evaluateJavascript(bgPlayJs, null);
+                
+                injectZenController(view);
+            }
+        });
+    }
+
     @Override protected void onDestroy() {
+        clearAllDataExceptCookies();
         super.onDestroy();
         executor.shutdown();
         timerManager.destroy();

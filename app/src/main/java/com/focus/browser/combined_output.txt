@@ -1,5 +1,6 @@
 cd app/src/main/java/com/focus/browser/
 find . -type f -not -name "combined_output.txt" -print -exec cat {} \; -exec echo "" \; > combined_output.txt
+cd ../../../../../../..
 
 ./BlocklistManager.java
 package com.zen.browser;
@@ -465,7 +466,7 @@ public class MainActivity extends AppCompatActivity {
 
     // --- UI elements ---
     private SwipeRefreshLayout swipeRefreshLayout;
-    private WebView webView;
+    private NestedScrollWebView webView;
     private EditText urlBar;
     private TextView timerView;
     private ProgressBar progressBar;
@@ -534,10 +535,14 @@ public class MainActivity extends AppCompatActivity {
 
         // Setup swipe refresh
         swipeRefreshLayout.setOnRefreshListener(() -> webView.reload());
-        swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> webView.canScrollVertically(-1));
-        // webView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-        //     swipeRefreshLayout.setEnabled(scrollY == 0);
-        // });
+        swipeRefreshLayout.setOnRefreshListener(() -> webView.reload());
+
+        swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> {
+            if (webView.canScrollVertically(-1)) {
+                return true;
+            }
+            return webView.getScrollY() > 0;
+        });
 
         bookmarksDb = new BookmarksDbHelper(this);
         blocklistManager = new BlocklistManager();
@@ -806,6 +811,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ---- Helpers ----
+    private void clearAllDataExceptCookies() {
+        if (webView != null) {
+            webView.clearCache(true);            // clears cache files (images, js, etc.)
+            webView.clearHistory();              // clears back/forward list
+            webView.clearFormData();             // clears autofill / form entries
+        }
+        // Clear WebView local storage (localStorage, sessionStorage) but not cookies
+        android.webkit.WebStorage.getInstance().deleteAllData();
+        // Optionally delete the WebView’s database if your app uses it
+        deleteDatabase("webview.db");
+        deleteDatabase("webviewCache.db");
+    }
+
     private void setUrlTextWithColoredProtocol(String fullUrl) {
         if (fullUrl == null) return;
         String lower = fullUrl.toLowerCase();
@@ -888,19 +906,19 @@ public class MainActivity extends AppCompatActivity {
         view.evaluateJavascript(js, null);
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
-    private void setupWebView() {
-        WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setLoadWithOverviewMode(true);
-        settings.setUseWideViewPort(true);
-        settings.setBuiltInZoomControls(true);
-        webView.getSettings().setTextZoom(100);
-        settings.setDisplayZoomControls(false);
-        settings.setLoadsImagesAutomatically(true);
-        settings.setMediaPlaybackRequiresUserGesture(false);
-    }
+    // @SuppressLint("SetJavaScriptEnabled")
+    // private void setupWebView() {
+    //     WebSettings settings = webView.getSettings();
+    //     settings.setJavaScriptEnabled(true);
+    //     settings.setDomStorageEnabled(true);
+    //     settings.setLoadWithOverviewMode(true);
+    //     settings.setUseWideViewPort(true);
+    //     settings.setBuiltInZoomControls(true);
+    //     webView.getSettings().setTextZoom(100);
+    //     settings.setDisplayZoomControls(false);
+    //     settings.setLoadsImagesAutomatically(true);
+    //     settings.setMediaPlaybackRequiresUserGesture(false);
+    // }
 
     @Override
     public void onBackPressed() {
@@ -919,9 +937,111 @@ public class MainActivity extends AppCompatActivity {
     }
     @Override protected void onResume() {
         super.onResume();
+        if (webView != null) {
+            webView.onResume();
+        }
         timerManager.resume();
     }
+
+    @Override protected void onStop() {
+        super.onStop();
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private void setupWebView() {
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        settings.setBuiltInZoomControls(true);
+        webView.getSettings().setTextZoom(100);
+        settings.setDisplayZoomControls(false);
+        settings.setLoadsImagesAutomatically(true);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+        
+        settings.setDatabaseEnabled(true);
+
+        // 1. Enable Third-Party Cookies (CRITICAL for cross-domain Google Auth)
+        android.webkit.CookieManager cookieManager = android.webkit.CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.setAcceptThirdPartyCookies(webView, true);
+        // 2. Dynamic User-Agent (Removes the WebView flag instead of hardcoding an older Chrome version)
+        // Hardcoded UAs eventually get flagged by Google's security checks. 
+        String defaultUA = settings.getUserAgentString();
+        settings.setUserAgentString(defaultUA.replace("; wv", ""));
+        // 3. Support Multiple Windows (Google Login often triggers popups)
+        settings.setSupportMultipleWindows(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        
+        String customUA = "Mozilla/5.0 (Linux; Android 13; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
+        settings.setUserAgentString(customUA);
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onProgressChanged(WebView view, int newProgress) {
+                progressBar.setProgress(newProgress);
+                progressBar.setVisibility(newProgress < 100 ? View.VISIBLE : View.GONE);
+            }
+
+            @Override
+            public boolean onJsAlert(WebView view, String url, String message, android.webkit.JsResult result) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setMessage(message)
+                        .setPositiveButton(android.R.string.ok, (dialog, which) -> result.confirm())
+                        .setCancelable(false)
+                        .create()
+                        .show();
+                return true;
+            }
+
+            @Override
+            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, android.os.Message resultMsg) {
+                WebView newWebView = new WebView(MainActivity.this);
+                newWebView.getSettings().setJavaScriptEnabled(true);
+                newWebView.getSettings().setUserAgentString(defaultUA.replace("; wv", ""));
+                
+                // Temporarily add it to your view hierarchy or handle it silently
+                // For a basic implementation, we just route the request through the current WebView
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(newWebView);
+                resultMsg.sendToTarget();
+                
+                newWebView.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
+                        webView.loadUrl(request.getUrl().toString());
+                        return true;
+                    }
+                });
+                return true;
+            }
+        });
+
+        webView.setWebViewClient(new BrowserWebViewClient(this, blocklistManager) {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                
+                // Fine-tuned background playback script that won't capture/kill form submission fields
+                String bgPlayJs = "(function() {" +
+                    "  Object.defineProperty(document, 'hidden', { get: function() { return false; }, configurable: true });" +
+                    "  Object.defineProperty(document, 'visibilityState', { get: function() { return 'visible'; }, configurable: true });" +
+                    "  // Dispatch a fake visibilitychange event every 1 second to force event-driven checks" +
+                    "  setInterval(function() {" +
+                    "    var evt = new Event('visibilitychange');" +
+                    "    document.dispatchEvent(evt);" +
+                    "  }, 1000);" +
+                    "})();";
+                view.evaluateJavascript(bgPlayJs, null);
+                
+                injectZenController(view);
+            }
+        });
+    }
+
     @Override protected void onDestroy() {
+        clearAllDataExceptCookies();
         super.onDestroy();
         executor.shutdown();
         timerManager.destroy();
@@ -988,7 +1108,6 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
 ./BrowserWebViewClient.java
 package com.zen.browser;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -1021,8 +1140,26 @@ public class BrowserWebViewClient extends WebViewClient {
         activity.onPageFinished(url);
     }
 
+    // Modern API 24+ handler
+    @Override
+    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+        return handleUrlLoading(view, request.getUrl().toString());
+    }
+
+    // Legacy fallback handler
+    @SuppressWarnings("deprecation")
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
+        return handleUrlLoading(view, url);
+    }
+
+    /**
+     * Unified URL routing logic to handle protocols, safetynet, and oauth safety.
+     */
+    private boolean handleUrlLoading(WebView view, String url) {
+        if (url == null) return false;
+
+        // 1. Handle common device protocols
         if (url.startsWith("tel:") || url.startsWith("mailto:") || 
             url.startsWith("sms:") || url.startsWith("geo:")) {
             try {
@@ -1033,7 +1170,16 @@ public class BrowserWebViewClient extends WebViewClient {
                 return true; 
             }
         }
+
+        // 2. Handle standard web requests
         if (url.startsWith("http://") || url.startsWith("https://")) {
+            
+            // FIX: Never run Google OAuth URLs through URL modifiers or SafeSearch wrappers.
+            // This prevents your code from corrupting query parameters (like changing %20 to +).
+            if (url.contains("accounts.google.com")) {
+                return false; // Let the WebView load the pristine raw URL string
+            }
+
             String safeUrl = UrlHelper.enforceSafeSearch(url);
             if (!safeUrl.equals(url)) {
                 view.loadUrl(safeUrl);
@@ -1041,6 +1187,35 @@ public class BrowserWebViewClient extends WebViewClient {
             }
             return false; 
         }
+
+        // 3. FIX: Handle custom app intent redirects (e.g., intent://, market://, grok://)
+        // Previously, returning true at the end of this method dropped these entirely.
+        try {
+            Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+            if (intent != null) {
+                // Check if target app is installed, otherwise handle fallback URL if available
+                if (view.getContext().getPackageManager().resolveActivity(intent, 0) == null) {
+                    String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                    if (fallbackUrl != null) {
+                        view.loadUrl(fallbackUrl);
+                        return true;
+                    }
+                } else {
+                    view.getContext().startActivity(intent);
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            // Fallback for raw non-standard protocol strings
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                view.getContext().startActivity(intent);
+                return true;
+            } catch (Exception ex) {
+                // Fail silently if device can't open the scheme
+            }
+        }
+        
         return true;
     }
 
@@ -1094,6 +1269,115 @@ public class BrowserWebViewClient extends WebViewClient {
         return new WebResourceResponse("text/html", "utf-8", new ByteArrayInputStream(html.getBytes()));
     }
 }
+
+// package com.zen.browser;
+
+// import android.app.Activity;
+// import android.content.Intent;
+// import android.graphics.Bitmap;
+// import android.net.Uri;
+// import android.text.TextUtils;
+// import android.webkit.WebResourceRequest;
+// import android.webkit.WebResourceResponse;
+// import android.webkit.WebView;
+// import android.webkit.WebViewClient;
+
+// import java.io.ByteArrayInputStream;
+// import java.util.List;
+
+// public class BrowserWebViewClient extends WebViewClient {
+//     private final MainActivity activity;
+//     private final BlocklistManager blocklistManager;
+
+//     public BrowserWebViewClient(MainActivity activity, BlocklistManager blocklistManager) {
+//         this.activity = activity;
+//         this.blocklistManager = blocklistManager;
+//     }
+
+//     @Override
+//     public void onPageStarted(WebView view, String url, Bitmap favicon) {
+//         activity.onPageStarted(url);
+//     }
+
+//     @Override
+//     public void onPageFinished(WebView view, String url) {
+//         super.onPageFinished(view, url);
+//         activity.onPageFinished(url);
+//     }
+
+//     @Override
+//     public boolean shouldOverrideUrlLoading(WebView view, String url) {
+//         if (url.startsWith("tel:") || url.startsWith("mailto:") || 
+//             url.startsWith("sms:") || url.startsWith("geo:")) {
+//             try {
+//                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+//                 view.getContext().startActivity(intent);
+//                 return true; 
+//             } catch (Exception e) {
+//                 return true; 
+//             }
+//         }
+//         if (url.startsWith("http://") || url.startsWith("https://")) {
+//             String safeUrl = UrlHelper.enforceSafeSearch(url);
+//             if (!safeUrl.equals(url)) {
+//                 view.loadUrl(safeUrl);
+//                 return true; 
+//             }
+//             return false; 
+//         }
+//         return true;
+//     }
+
+//     @Override
+//     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+//         String url = request.getUrl().toString().toLowerCase();
+//         if (UrlHelper.isVideoUrlBlock(url)) {
+//             view.post(() -> activity.injectZenController(view));
+//         }
+
+//         List<String> blockingLists = blocklistManager.getBlockingLists(request.getUrl().getHost());
+//         if (!blockingLists.isEmpty()) {
+//             return generateBlockPage(blockingLists);
+//         }
+//         return super.shouldInterceptRequest(view, request);
+//     }
+
+//     private WebResourceResponse generateBlockPage(List<String> blockingLists) {
+//         boolean isDark = (activity.getResources().getConfiguration().uiMode &
+//                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+//         String bgColor = isDark ? "#211f27" : "#f8f7f4";
+//         String textColor = isDark ? "#dddddd" : "#211f27";
+//         String mutedColor = isDark ? "#888888" : "#999999";
+//         String names = TextUtils.join(", ", blockingLists);
+//         String html = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
+//             "<style>" +
+//             "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; " +
+//             "display: flex; flex-direction: column; justify-content: center; align-items: center; " +
+//             "height: 100vh; margin: 0; background: " + bgColor + "; color: " + textColor + "; text-align: center; }" +
+//             ".content-wrapper { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }" +
+//             ".footer { padding-bottom: 50px; width: 100%; }" +
+//             "h2 { font-weight: 300; font-size: 28px; margin-bottom: 12px; }" +
+//             "p { color: " + mutedColor + "; font-size: 16px; margin: 0; }" +
+//             ".reason { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: " + mutedColor + "; " +
+//             "margin-top: 20px; opacity: 0.5; text-transform: uppercase; }" +
+//             "button { background: transparent; border: 1px solid " + textColor + "; color: " + textColor + "; " +
+//             "padding: 12px 30px; border-radius: 25px; cursor: pointer; font-size: 14px; " +
+//             "transition: all 0.3s ease; outline: none; }" +
+//             "button:active { background: " + textColor + "; color: " + bgColor + "; }" +
+//             "</style></head>" +
+//             "<body>" +
+//             "<div class='content-wrapper'>" +
+//             "  <h2>Take a deep breath.</h2>" +
+//             "  <p>Your focus matters.</p>" +
+//             "</div>" +
+//             "<div class='footer'>" +
+//             "  <button onclick='history.back()'>Continue my focus</button>" +
+//             "  <div class='reason'>Protected from: " + names + "</div>" +
+//             "</div>" +
+//             "</body></html>";
+//         return new WebResourceResponse("text/html", "utf-8", new ByteArrayInputStream(html.getBytes()));
+//     }
+// }
 
 ./UrlHelper.java
 package com.zen.browser;
@@ -1271,6 +1555,83 @@ public class UrlHelper {
     }
 }
 
+./NestedScrollWebView.java
+package com.zen.browser;
+
+import android.content.Context;
+import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.webkit.WebView;
+import androidx.core.view.NestedScrollingChild2;
+import androidx.core.view.NestedScrollingChildHelper;
+import androidx.core.view.ViewCompat;
+
+public class NestedScrollWebView extends WebView implements NestedScrollingChild2 {
+
+    private NestedScrollingChildHelper childHelper;
+    private final int[] scrollOffset = new int[2];
+    private final int[] scrollConsumed = new int[2];
+    private int nestedYOffset;
+
+    public NestedScrollWebView(Context context) {
+        super(context);
+        init();
+    }
+
+    public NestedScrollWebView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init();
+    }
+
+    public NestedScrollWebView(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        init();
+    }
+
+    private void init() {
+        childHelper = new NestedScrollingChildHelper(this);
+        setNestedScrollingEnabled(true);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        MotionEvent trackedEvent = MotionEvent.obtain(event);
+        final int action = event.getActionMasked();
+
+        if (action == MotionEvent.ACTION_DOWN) {
+            nestedYOffset = 0;
+        }
+
+        trackedEvent.offsetLocation(0, nestedYOffset);
+
+        switch (action) {
+            case MotionEvent.ACTION_DOWN:
+                startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL, ViewCompat.TYPE_TOUCH);
+                break;
+            case MotionEvent.ACTION_MOVE:
+                int deltaY = 0;
+                if (dispatchNestedPreScroll(0, deltaY, scrollConsumed, scrollOffset, ViewCompat.TYPE_TOUCH)) {
+                    trackedEvent.offsetLocation(0, -scrollOffset[1]);
+                    nestedYOffset += scrollOffset[1];
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                stopNestedScroll(ViewCompat.TYPE_TOUCH);
+                break;
+        }
+
+        boolean returnValue = super.onTouchEvent(trackedEvent);
+        trackedEvent.recycle();
+        return returnValue;
+    }
+
+    @Override public boolean startNestedScroll(int axes, int type) { return childHelper.startNestedScroll(axes, type); }
+    @Override public void stopNestedScroll(int type) { childHelper.stopNestedScroll(type); }
+    @Override public boolean hasNestedScrollingParent(int type) { return childHelper.hasNestedScrollingParent(type); }
+    @Override public boolean dispatchNestedScroll(int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, int[] offsetInWindow, int type) { return childHelper.dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, offsetInWindow, type); }
+    @Override public boolean dispatchNestedPreScroll(int dx, int dy, int[] consumed, int[] offsetInWindow, int type) { return childHelper.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow, type); }
+}
 ./TimerManager.java
 package com.zen.browser;
 
