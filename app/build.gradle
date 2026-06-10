@@ -1,3 +1,8 @@
+/**
+ * App icon: "Zen icons created by Freepik - Flaticon"
+ * https://www.flaticon.com/free-icons/zen
+ */
+
 plugins {
     id 'com.android.application'
 }

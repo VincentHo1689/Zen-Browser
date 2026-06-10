@@ -1,8 +1,3 @@
-/**
- * App icon: "Zen icons created by Freepik - Flaticon"
- * https://www.flaticon.com/free-icons/zen
- */
-
 package com.zen.browser;
 
 import android.annotation.SuppressLint;
@@ -1017,34 +1012,46 @@ public class MainActivity extends AppCompatActivity {
     private float dstPx(int dp) { return dp * getResources().getDisplayMetrics().density; }
     private float getPopupCornerRadiusFixer() { return dstPx(16); }
 
+
     private void injectZenController(WebView view) {
         String js = "window.ZenController = {" +
-                    "  hideVideo: function() {" +
-                    "    var videos = document.querySelectorAll('video');" +
-                    "    videos.forEach(function(v) {" +
-                    "      v.style.opacity = '0';" +
-                    "      v.style.pointerEvents = 'none';" +
-                    "      v.play();" + // Ensure audio keeps playing
-                    "      var msg = document.createElement('div');" +
-                    "      msg.innerText = 'Visuals blocked in Zen Browser';" +
-                    "      msg.style.position = 'absolute';" +
-                    "      msg.style.top = '50%';" +
-                    "      msg.style.left = '50%';" +
-                    "      msg.style.transform = 'translate(-50%, -50% z-index: 9999';" +
-                    "      msg.style.color = 'white';" +
-                    "      msg.style.background = 'rgba(0,0,0,0.7)';" +
-                    "      msg.style.padding = '10px 20px';" +
-                    "      msg.style.borderRadius = '5px';" +
-                    "      msg.style.pointerEvents = 'none';" +
-                    "      v.parentElement.appendChild(msg);" +
-                    "      var observer = new MutationObserver(function(mutations) {" +
-                    "        if (v.style.opacity !== '0') { v.style.opacity = '0'; v.play(); }" +
+                    "  init: function() {" +
+                    "    var observer = new MutationObserver(function(mutations) {" +
+                    "      var videos = document.querySelectorAll('video');" +
+                    "      videos.forEach(function(v) {" +
+                    "        if (!v.dataset.zenProcessed) {" + // Only process each video once
+                    "          v.dataset.zenProcessed = 'true';" +
+                    "          window.ZenController.hideVideo(v);" +
+                    "        }" +
                     "      });" +
-                    "      observer.observe(v, { attributes: true, attributeFilter: ['style'] });" +
                     "    });" +
+                    "    observer.observe(document.body, { childList: true, subtree: true });" +
+                    "  }," +
+                    "  hideVideo: function(v) {" +
+                    "    v.style.opacity = '0';" +
+                    "    v.style.pointerEvents = 'none';" +
+                    "    v.play();" +
+                    "    var rect = v.getBoundingClientRect();" +
+                    "    var msg = document.createElement('div');" +
+                    "    msg.innerText = 'Audio only';" +
+                    "    msg.style.position = 'fixed';" +
+                    "    msg.style.left = (rect.left + rect.width/2) + 'px';" +
+                    "    msg.style.top = (rect.top + rect.height/2) + 'px';" +
+                    "    msg.style.transform = 'translate(-50%, -50%)';" +
+                    "    msg.style.zIndex = '9999';" +
+                    "    msg.style.color = 'white';" +
+                    "    msg.style.background = 'rgba(0,0,0,0.7)';" +
+                    "    msg.style.padding = '10px 20px';" +
+                    "    msg.style.borderRadius = '5px';" +
+                    "    msg.style.pointerEvents = 'none';" +
+                    "    document.body.appendChild(msg);" +
+                    "    var gObserver = new MutationObserver(function() {" +
+                    "      if (!document.body.contains(v)) { msg.remove(); gObserver.disconnect(); }" +
+                    "    });" +
+                    "    gObserver.observe(document.body, { childList: true, subtree: true });" +
                     "  }" +
                     "};" +
-                    "window.ZenController.hideVideo();";
+                    "window.ZenController.init();";
         
         view.evaluateJavascript(js, null);
     }
