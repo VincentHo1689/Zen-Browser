@@ -83,7 +83,6 @@ public class UrlHelper {
                 }
                 if (safeParam != null) {
                     // Parse existing query params
-                    Set<String> existingKeys = new HashSet<>();
                     Uri.Builder builder = uri.buildUpon().clearQuery();
                     String query = uri.getEncodedQuery();
                     if (query != null) {
@@ -91,7 +90,6 @@ public class UrlHelper {
                         String[] params = query.split("&");
                         for (String param : params) {
                             String key = param.contains("=") ? param.substring(0, param.indexOf('=')) : param;
-                            existingKeys.add(key);
                             builder.appendQueryParameter(
                                     Uri.decode(param.contains("=") ? param.substring(0, param.indexOf('=')) : param),
                                     param.contains("=") ? Uri.decode(param.substring(param.indexOf('=') + 1)) : ""
@@ -104,12 +102,7 @@ public class UrlHelper {
                         String[] kv = part.split("=", 2);
                         String key = kv[0];
                         String value = kv.length > 1 ? kv[1] : "";
-                        // Remove any existing entry for this key (already collected above, but we need to clear)
-                        // To be safe, we build fresh: remove the param if it exists, then append new
-                        // A simpler approach: rebuild query from scratch
                     }
-                    // Instead of complex rebuilding, we can just replace the query string using a map.
-                    // Let’s use a more robust method:
                     return buildSafeSearchUrl(uri, hostKey, safeParam);
                 }
             }

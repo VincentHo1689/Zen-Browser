@@ -89,11 +89,9 @@ public class DialogHelper {
         Set<Long> selectedIds = new HashSet<>();
         int iconSize = (int) dstPx(activity, 20);
 
-        AlertDialog[] dialogHolder = new AlertDialog[1];
         AlertDialog dialog = new AlertDialog.Builder(activity)
                 .setView(container)
                 .create();
-        dialogHolder[0] = dialog;
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         }
@@ -111,7 +109,6 @@ public class DialogHelper {
             container.requestLayout();
         });
         dialog.setCanceledOnTouchOutside(true);
-        dialogHolder[0] = dialog;
 
         for (BookmarksDbHelper.Bookmark bm : bookmarks) {
             LinearLayout row = new LinearLayout(activity);

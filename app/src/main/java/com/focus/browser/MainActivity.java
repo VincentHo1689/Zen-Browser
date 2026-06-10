@@ -466,8 +466,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private float dstPx(int dp) { return dp * getResources().getDisplayMetrics().density; }
-
+    private boolean zenInjected = false;
     public void injectZenController(WebView view) {
+        if (zenInjected) return;
+        zenInjected = true;
         String js = "window.ZenController = {" +
                     "  init: function() {" +
                     "    var observer = new MutationObserver(function(mutations) {" +
