@@ -59,7 +59,7 @@ public class BlocklistManager {
             executor.execute(() -> {
                 Set<String> set = new HashSet<>();
                 try {
-                    HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+                    HttpURLConnection conn = (HttpURLConnection) java.net.URI.create(url).toURL().openConnection();
                     conn.setConnectTimeout(15000);
                     conn.setReadTimeout(15000);
                     conn.setRequestProperty("User-Agent", "Mozilla/5.0");

@@ -209,6 +209,8 @@ public class DialogHelper {
         LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
         scroll.setLayoutParams(scrollParams);
+        scroll.setFillViewport(true);
+
         LinearLayout list = new LinearLayout(activity);
         list.setOrientation(LinearLayout.VERTICAL);
 

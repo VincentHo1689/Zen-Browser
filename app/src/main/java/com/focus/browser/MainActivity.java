@@ -127,14 +127,14 @@ public class MainActivity extends AppCompatActivity {
 
         // Setup swipe refresh
         swipeRefreshLayout.setOnRefreshListener(() -> webView.reload());
-        swipeRefreshLayout.setOnRefreshListener(() -> webView.reload());
+        swipeRefreshLayout.setEnabled(true); 
 
-        swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> {
-            if (webView.canScrollVertically(-1)) {
-                return true;
-            }
-            return webView.getScrollY() > 0;
-        });
+        // swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> {
+        //     if (webView.canScrollVertically(-1)) {
+        //         return true;
+        //     }
+        //     return webView.getScrollY() > 0;
+        // });
 
         bookmarksDb = new BookmarksDbHelper(this);
         blocklistManager = new BlocklistManager();
@@ -172,7 +172,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        webView.setWebViewClient(new BrowserWebViewClient(this, blocklistManager));
+        // webView.setWebViewClient(new BrowserWebViewClient(this, blocklistManager));
+        webView.setWebViewClient(new BrowserWebViewClient(this, blocklistManager) {
+            @Override
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                injectScrollDetection(view);
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                injectScrollDetection(view);
+                injectZenController(view);
+            }
+        });
 
         webView.loadUrl("https://www.google.com/search?q=&pws=0&safe=active");
         setUrlTextWithColoredProtocol("https://www.google.com/search?q=&pws=0&safe=active");
@@ -409,9 +423,7 @@ public class MainActivity extends AppCompatActivity {
             webView.clearHistory();              // clears back/forward list
             webView.clearFormData();             // clears autofill / form entries
         }
-        // Clear WebView local storage (localStorage, sessionStorage) but not cookies
         android.webkit.WebStorage.getInstance().deleteAllData();
-        // Optionally delete the WebView’s database if your app uses it
         deleteDatabase("webview.db");
         deleteDatabase("webviewCache.db");
     }
@@ -473,12 +485,13 @@ public class MainActivity extends AppCompatActivity {
                     "    v.style.opacity = '0';" +
                     "    v.style.pointerEvents = 'none';" +
                     "    v.play();" +
-                    "    var rect = v.getBoundingClientRect();" +
+                    "    if (!v.parentNode) return;" +
+                    "    if (window.getComputedStyle(v.parentNode).position === 'static') {" +
+                    "      v.parentNode.style.position = 'relative';" +
+                    "    }" +
                     "    var msg = document.createElement('div');" +
                     "    msg.innerText = 'Audio only';" +
-                    "    msg.style.position = 'fixed';" +
-                    "    msg.style.left = (rect.left + rect.width/2) + 'px';" +
-                    "    msg.style.top = (rect.top + rect.height/2) + 'px';" +
+                    "    msg.style.position = 'absolute';" +
                     "    msg.style.transform = 'translate(-50%, -50%)';" +
                     "    msg.style.zIndex = '9999';" +
                     "    msg.style.color = 'white';" +
@@ -486,11 +499,23 @@ public class MainActivity extends AppCompatActivity {
                     "    msg.style.padding = '10px 20px';" +
                     "    msg.style.borderRadius = '5px';" +
                     "    msg.style.pointerEvents = 'none';" +
-                    "    document.body.appendChild(msg);" +
-                    "    var gObserver = new MutationObserver(function() {" +
-                    "      if (!document.body.contains(v)) { msg.remove(); gObserver.disconnect(); }" +
+                    "    v.parentNode.appendChild(msg);" +
+                    "    " +
+                    "    var ro = new ResizeObserver(function() {" +
+                    "      if (v.offsetWidth === 0 || v.offsetHeight === 0) {" +
+                    "        msg.style.display = 'none';" +
+                    "      } else {" +
+                    "        msg.style.display = 'block';" +
+                    "        msg.style.left = (v.offsetLeft + v.offsetWidth / 2) + 'px';" +
+                    "        msg.style.top = (v.offsetTop + v.offsetHeight / 2) + 'px';" +
+                    "      }" +
                     "    });" +
-                    "    gObserver.observe(document.body, { childList: true, subtree: true });" +
+                    "    ro.observe(v);" +
+                    "    " +
+                    "    var mo = new MutationObserver(function() {" +
+                    "      if (!document.body.contains(v)) { msg.remove(); ro.disconnect(); mo.disconnect(); }" +
+                    "    });" +
+                    "    mo.observe(document.body, { childList: true, subtree: true });" +
                     "  }" +
                     "};" +
                     "window.ZenController.init();";
@@ -498,45 +523,33 @@ public class MainActivity extends AppCompatActivity {
         view.evaluateJavascript(js, null);
     }
 
-    // @SuppressLint("SetJavaScriptEnabled")
-    // private void setupWebView() {
-    //     WebSettings settings = webView.getSettings();
-    //     settings.setJavaScriptEnabled(true);
-    //     settings.setDomStorageEnabled(true);
-    //     settings.setLoadWithOverviewMode(true);
-    //     settings.setUseWideViewPort(true);
-    //     settings.setBuiltInZoomControls(true);
-    //     webView.getSettings().setTextZoom(100);
-    //     settings.setDisplayZoomControls(false);
-    //     settings.setLoadsImagesAutomatically(true);
-    //     settings.setMediaPlaybackRequiresUserGesture(false);
-    // }
-
-    @Override
-    public void onBackPressed() {
-        if (urlBar.hasFocus()) {
-            urlBar.clearFocus(); 
-        } else if (webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @Override protected void onPause() {
-        super.onPause();
-        timerManager.pause();
-    }
-    @Override protected void onResume() {
-        super.onResume();
-        if (webView != null) {
-            webView.onResume();
-        }
-        timerManager.resume();
-    }
-
-    @Override protected void onStop() {
-        super.onStop();
+    private void injectScrollDetection(WebView view) {
+        String scrollJs =
+                "(function() {" +
+                "  function getScrollTop() {" +
+                "    var se = document.scrollingElement;" +
+                "    if (se && se.scrollTop > 0) return se.scrollTop;" +
+                "    if (document.body && document.body.scrollTop > 0) return document.body.scrollTop;" +
+                "    if (document.documentElement && document.documentElement.scrollTop > 0) return document.documentElement.scrollTop;" +
+                "    var all = document.querySelectorAll('*');" +
+                "    for (var i = 0; i < all.length; i++) {" +
+                "      var el = all[i];" +
+                "      var style = window.getComputedStyle(el);" +
+                "      if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollTop > 0) {" +
+                "        return el.scrollTop;" +
+                "      }" +
+                "    }" +
+                "    return 0;" +
+                "  }" +
+                "  function updateRefreshState() {" +
+                "    var canRefresh = (getScrollTop() === 0);" +
+                "    if (window.ZenBridge) window.ZenBridge.setCanRefresh(canRefresh);" +
+                "  }" +
+                "  window.addEventListener('scroll', updateRefreshState, true);" +
+                "  window.addEventListener('touchmove', updateRefreshState, true);" +
+                "  updateRefreshState();" +
+                "})();";
+        view.evaluateJavascript(scrollJs, null);
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -551,23 +564,25 @@ public class MainActivity extends AppCompatActivity {
         settings.setDisplayZoomControls(false);
         settings.setLoadsImagesAutomatically(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
-        
         settings.setDatabaseEnabled(true);
 
-        // 1. Enable Third-Party Cookies (CRITICAL for cross-domain Google Auth)
         android.webkit.CookieManager cookieManager = android.webkit.CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
         cookieManager.setAcceptThirdPartyCookies(webView, true);
-        // 2. Dynamic User-Agent (Removes the WebView flag instead of hardcoding an older Chrome version)
-        // Hardcoded UAs eventually get flagged by Google's security checks. 
+        
         String defaultUA = settings.getUserAgentString();
-        settings.setUserAgentString(defaultUA.replace("; wv", ""));
-        // 3. Support Multiple Windows (Google Login often triggers popups)
         settings.setSupportMultipleWindows(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
         
         String customUA = "Mozilla/5.0 (Linux; Android 13; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
         settings.setUserAgentString(customUA);
+
+        webView.addJavascriptInterface(new Object() {
+            @android.webkit.JavascriptInterface
+            public void setCanRefresh(final boolean canRefresh) {
+                runOnUiThread(() -> swipeRefreshLayout.setEnabled(canRefresh));
+            }
+        }, "ZenBridge");
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -593,8 +608,6 @@ public class MainActivity extends AppCompatActivity {
                 newWebView.getSettings().setJavaScriptEnabled(true);
                 newWebView.getSettings().setUserAgentString(defaultUA.replace("; wv", ""));
                 
-                // Temporarily add it to your view hierarchy or handle it silently
-                // For a basic implementation, we just route the request through the current WebView
                 WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
                 transport.setWebView(newWebView);
                 resultMsg.sendToTarget();
@@ -609,27 +622,37 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
 
-        webView.setWebViewClient(new BrowserWebViewClient(this, blocklistManager) {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                
-                // Fine-tuned background playback script that won't capture/kill form submission fields
-                String bgPlayJs = "(function() {" +
-                    "  Object.defineProperty(document, 'hidden', { get: function() { return false; }, configurable: true });" +
-                    "  Object.defineProperty(document, 'visibilityState', { get: function() { return 'visible'; }, configurable: true });" +
-                    "  // Dispatch a fake visibilitychange event every 1 second to force event-driven checks" +
-                    "  setInterval(function() {" +
-                    "    var evt = new Event('visibilitychange');" +
-                    "    document.dispatchEvent(evt);" +
-                    "  }, 1000);" +
-                    "})();";
-                view.evaluateJavascript(bgPlayJs, null);
-                
-                injectZenController(view);
-            }
-        });
+    @Override
+    public void onBackPressed() {
+        if (urlBar.hasFocus()) {
+            urlBar.clearFocus(); 
+        } else if (webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @Override protected void onPause() {
+        super.onPause();
+        timerManager.pause();
+        if (webView != null) {
+            webView.evaluateJavascript("window.isAppBackgrounded = true;", null);
+        }
+    }
+    @Override protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            webView.onResume();
+            webView.evaluateJavascript("window.isAppBackgrounded = false;", null);
+        }
+        timerManager.resume();
+    }
+
+    @Override protected void onStop() {
+        super.onStop();
     }
 
     @Override protected void onDestroy() {

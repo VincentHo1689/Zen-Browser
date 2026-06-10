@@ -125,8 +125,8 @@ public class UrlHelper {
         if (oldQuery != null) {
             for (String param : oldQuery.split("&")) {
                 int idx = param.indexOf('=');
-                String key = idx != -1 ? Uri.decode(param.substring(0, idx)) : Uri.decode(param);
-                String value = idx != -1 ? Uri.decode(param.substring(idx + 1)) : "";
+                String key = idx != -1 ? Uri.decode(param.substring(0, idx).replace("+", "%20")) : Uri.decode(param.replace("+", "%20"));
+                String value = idx != -1 ? Uri.decode(param.substring(idx + 1).replace("+", "%20")) : "";
                 queryMap.put(key, value);
             }
         }
@@ -144,7 +144,7 @@ public class UrlHelper {
     public static boolean isTrustedSite(String url) {
         if (url == null || url.isEmpty()) return false;
         try {
-            java.net.URL parsedUrl = new java.net.URL(url);
+            java.net.URL parsedUrl = java.net.URI.create(url).toURL();
             String host = parsedUrl.getHost().toLowerCase();
             String[] trustedTLDs = { ".edu", ".edu.hk", ".ac.uk", ".gov", ".gov.hk" };
             for (String tld : trustedTLDs) {
