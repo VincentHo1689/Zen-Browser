@@ -637,15 +637,11 @@ public class MainActivity extends AppCompatActivity {
     @Override protected void onPause() {
         super.onPause();
         timerManager.pause();
-        if (webView != null) {
-            webView.evaluateJavascript("window.isAppBackgrounded = true;", null);
-        }
     }
     @Override protected void onResume() {
         super.onResume();
         if (webView != null) {
             webView.onResume();
-            webView.evaluateJavascript("window.isAppBackgrounded = false;", null);
         }
         timerManager.resume();
     }
@@ -660,5 +656,10 @@ public class MainActivity extends AppCompatActivity {
         executor.shutdown();
         timerManager.destroy();
         bookmarksDb.close();
+
+        if (webView != null) {
+            webView.stopLoading();
+            webView.destroy();
+        }
     }
 }

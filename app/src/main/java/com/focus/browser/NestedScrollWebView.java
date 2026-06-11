@@ -79,6 +79,18 @@ public class NestedScrollWebView extends WebView implements NestedScrollingChild
         return returnValue;
     }
 
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        // Force the WebView to think it's always visible
+        super.onWindowVisibilityChanged(View.VISIBLE);
+    }
+
+    @Override
+    protected void onVisibilityChanged(View changedView, int visibility) {
+        // Prevent Chromium from pausing media when the view is hidden
+        super.onVisibilityChanged(changedView, View.VISIBLE);
+    }
+
     // Modern Interface Delegates
     @Override public boolean startNestedScroll(int axes, int type) { return childHelper.startNestedScroll(axes, type); }
     @Override public void stopNestedScroll(int type) { childHelper.stopNestedScroll(type); }

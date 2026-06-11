@@ -6,3 +6,4 @@ build/
 *.log
 *.apk
 *.keystore
+combined_output.txt
