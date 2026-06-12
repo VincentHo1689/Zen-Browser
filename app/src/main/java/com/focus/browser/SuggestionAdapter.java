@@ -1,4 +1,4 @@
-package com.zen.browser;
+package com.browser.zen;
 
 import android.content.res.Configuration;
 import android.graphics.Color;

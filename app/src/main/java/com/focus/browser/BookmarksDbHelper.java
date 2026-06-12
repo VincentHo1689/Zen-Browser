@@ -1,4 +1,4 @@
-package com.zen.browser;
+package com.browser.zen;
 
 import android.content.ContentValues;
 import android.content.Context;

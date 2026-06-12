@@ -7,3 +7,5 @@ build/
 *.apk
 *.keystore
 combined_output.txt
+keystore.jks
+local.properties
