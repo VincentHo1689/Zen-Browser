@@ -1,9 +1,157 @@
 <?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/bottom_bar"
+        android:orientation="vertical">
+
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipe_refresh_layout"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <com.zen.browser.NestedScrollWebView
+                android:id="@+id/webview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:max="100"
+            android:progressTint="@color/timer_green"
+            android:progressBackgroundTint="#20000000" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/suggestion_list"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:layout_above="@id/bottom_bar"
+        android:visibility="gone"
+        android:background="?android:attr/colorBackground" />
+
+    <LinearLayout
+        android:id="@+id/bottom_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="36dp"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:background="@drawable/bottom_bar_bg"
+        android:theme="@style/Theme.AppCompat.Light">
+
+        <FrameLayout
+            android:id="@+id/url_container"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            android:background="@drawable/input_field_rounded">
+
+            <EditText
+                android:id="@+id/url_bar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:inputType="textUri"
+                android:imeOptions="actionGo"
+                android:singleLine="true"
+                android:paddingStart="12dp"
+                android:paddingEnd="42dp"
+                android:background="@android:color/transparent"
+                android:textColor="@color/address_bar_text"
+                android:textColorHint="@color/address_bar_text"
+                android:textSize="14sp"
+                android:ellipsize="start"
+                android:scrollHorizontally="true"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/timer"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_gravity="end|center_vertical"
+                android:text="0:00"
+                android:textSize="10sp"
+                android:layout_marginEnd="8dp"
+                android:padding="4dp"
+                android:paddingTop="12dp"
+                android:gravity="center"
+                android:visibility="visible" />
+
+            <ImageView
+                android:id="@+id/btn_qr"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginEnd="10dp"
+                android:src="@drawable/ic_qr_code"
+                android:visibility="gone"
+                android:contentDescription="Scan QR code" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/back_wrapper"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/btn_back_image"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_arrow_back"
+                android:background="@drawable/circle_bg"
+                android:contentDescription="Back"
+                android:scaleType="center"
+                android:duplicateParentState="true" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/forward_wrapper"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/btn_forward_image"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_arrow_back"
+                android:background="@drawable/circle_bg"
+                android:contentDescription="Forward"
+                android:scaleX="-1"
+                android:scaleType="center"
+                android:duplicateParentState="true" />
+        </FrameLayout>
+    </LinearLayout>
+</RelativeLayout>
+
+<!-- <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Main content: WebView + bottom bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -136,7 +284,6 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Overlay suggestion list (appears above bottom bar) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/suggestion_list"
         android:layout_width="match_parent"
@@ -145,4 +292,4 @@
         android:layout_marginBottom="48dp"
         android:visibility="gone"
         android:background="@android:color/white" />
-</FrameLayout>
+</FrameLayout> -->

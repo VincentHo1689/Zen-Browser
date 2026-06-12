@@ -70,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
     private BookmarksDbHelper bookmarksDb;
     private BlocklistManager blocklistManager;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService suggestionExecutor = Executors.newSingleThreadExecutor();
 
     // --- Timer ---
     private TimerManager timerManager;
@@ -257,10 +258,23 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        btnBack.setOnClickListener(v -> { if (webView.canGoBack()) webView.goBack(); });
-        btnForward.setOnClickListener(v -> { if (webView.canGoForward()) webView.goForward(); });
-        btnBack.setOnLongClickListener(v -> { DialogHelper.showBookmarkPopup(this, bookmarksDb, webView); return true; });
-        btnForward.setOnLongClickListener(v -> { DialogHelper.showDownloadListPopup(this); return true; });
+        // btnBack.setOnClickListener(v -> { if (webView.canGoBack()) webView.goBack(); });
+        // btnForward.setOnClickListener(v -> { if (webView.canGoForward()) webView.goForward(); });
+        // btnBack.setOnLongClickListener(v -> { DialogHelper.showBookmarkPopup(this, bookmarksDb, webView); return true; });
+        // btnForward.setOnLongClickListener(v -> { DialogHelper.showDownloadListPopup(this); return true; });
+
+        // Attach listeners to the outer wrappers instead of the inner image views
+        backWrapper.setOnClickListener(v -> { if (webView.canGoBack()) webView.goBack(); });
+        forwardWrapper.setOnClickListener(v -> { if (webView.canGoForward()) webView.goForward(); });
+
+        backWrapper.setOnLongClickListener(v -> { 
+            DialogHelper.showBookmarkPopup(this, bookmarksDb, webView); 
+            return true; 
+        });
+        forwardWrapper.setOnLongClickListener(v -> { 
+            DialogHelper.showDownloadListPopup(this); 
+            return true; 
+        });
 
         urlBar.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_GO) {
@@ -350,7 +364,7 @@ public class MainActivity extends AppCompatActivity {
 
         suggestionHandler.removeCallbacks(suggestionFetcher);
         suggestionFetcher = () -> {
-            executor.execute(() -> {
+            suggestionExecutor.execute(() -> {
                 List<String> results = new ArrayList<>();
                 try {
                     String encoded = URLEncoder.encode(query, "utf-8");
@@ -589,6 +603,7 @@ public class MainActivity extends AppCompatActivity {
         clearAllDataExceptCookies();
         super.onDestroy();
         executor.shutdown();
+        suggestionExecutor.shutdown();
         timerManager.destroy();
         bookmarksDb.close();
 

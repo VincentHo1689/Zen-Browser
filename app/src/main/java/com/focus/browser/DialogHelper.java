@@ -30,12 +30,17 @@ public class DialogHelper {
     }
 
     public static void showBookmarkPopup(Activity activity, BookmarksDbHelper bookmarksDb, WebView webView) {
+        // 1. Calculate dimensions right at the start
+        int screenWidth = activity.getResources().getDisplayMetrics().widthPixels;
+        int screenHeight = activity.getResources().getDisplayMetrics().heightPixels;
+        int dialogWidth = (int)(screenWidth * 0.8);
+        int dialogHeight = (int)(screenHeight * 0.65);
+
+        // 2. Set dimensions directly onto the container early
         LinearLayout container = new LinearLayout(activity);
         container.setOrientation(LinearLayout.VERTICAL);
         container.setPadding(24, 24, 24, 40);
-        container.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT));
+        container.setLayoutParams(new LinearLayout.LayoutParams(dialogWidth, dialogHeight));
 
         boolean isDarkMode = (activity.getResources().getConfiguration().uiMode &
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
@@ -92,22 +97,10 @@ public class DialogHelper {
         AlertDialog dialog = new AlertDialog.Builder(activity)
                 .setView(container)
                 .create();
+        
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         }
-        dialog.setOnShowListener(dialogInterface -> {
-            int screenWidth = activity.getResources().getDisplayMetrics().widthPixels;
-            int screenHeight = activity.getResources().getDisplayMetrics().heightPixels;
-            int dialogWidth = (int)(screenWidth * 0.8);
-            int dialogHeight = (int)(screenHeight * 0.65);
-            if (dialog.getWindow() != null) {
-                dialog.getWindow().setLayout(dialogWidth, dialogHeight);
-            }
-            ViewGroup.LayoutParams params = container.getLayoutParams();
-            params.height = dialogHeight;
-            container.setLayoutParams(params);
-            container.requestLayout();
-        });
         dialog.setCanceledOnTouchOutside(true);
 
         for (BookmarksDbHelper.Bookmark bm : bookmarks) {
@@ -179,14 +172,25 @@ public class DialogHelper {
             } else Toast.makeText(activity, "Tap icons to select", Toast.LENGTH_SHORT).show();
         });
 
+        // FIX: Show layout constraints immediately without an asynchronous wrapper listener
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(dialogWidth, dialogHeight);
+        }
+        container.getLayoutParams().height = dialogHeight;
+        container.requestLayout();
     }
 
     public static void showDownloadListPopup(Activity activity) {
+        // 1. Calculate dimensions right at the start
+        int screenWidth = activity.getResources().getDisplayMetrics().widthPixels;
+        int screenHeight = activity.getResources().getDisplayMetrics().heightPixels;
+        int dialogWidth = (int)(screenWidth * 0.8);
+        int dialogHeight = (int)(screenHeight * 0.65);
+
+        // 2. Set dimensions directly onto the container early
         LinearLayout container = new LinearLayout(activity);
-        container.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT));
+        container.setLayoutParams(new LinearLayout.LayoutParams(dialogWidth, dialogHeight));
         container.setOrientation(LinearLayout.VERTICAL);
         container.setPadding(24, 24, 24, 40);
 
@@ -282,26 +286,20 @@ public class DialogHelper {
         container.setBackground(shape);
 
         AlertDialog dialog = new AlertDialog.Builder(activity)
-        .setView(container)
-        .create();
+            .setView(container)
+            .create();
+        
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         }
         dialog.setCanceledOnTouchOutside(true);
 
-        dialog.setOnShowListener(dialogInterface -> {
-            int screenWidth = activity.getResources().getDisplayMetrics().widthPixels;
-            int screenHeight = activity.getResources().getDisplayMetrics().heightPixels;
-            int dialogWidth = (int)(screenWidth * 0.8);
-            int dialogHeight = (int)(screenHeight * 0.65);
-            if (dialog.getWindow() != null) {
-                dialog.getWindow().setLayout(dialogWidth, dialogHeight);
-            }
-            ViewGroup.LayoutParams params = container.getLayoutParams();
-            params.height = dialogHeight;
-            container.setLayoutParams(params);
-            container.requestLayout();
-        });
+        // FIX: Show layout constraints immediately without an asynchronous wrapper listener
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(dialogWidth, dialogHeight);
+        }
+        container.getLayoutParams().height = dialogHeight;
+        container.requestLayout();
     }
 }
