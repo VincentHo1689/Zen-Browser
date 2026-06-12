@@ -111,16 +111,6 @@
                     android:scaleType="center"
                     android:clickable="true"
                     android:focusable="true" />
-                <!-- <TextView
-                    android:id="@+id/btn_back"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:text="&lt;"
-                    android:textSize="14sp"
-                    android:gravity="center"
-                    android:textColor="@color/circle_symbol"
-                    android:clickable="true"
-                    android:focusable="true" /> -->
             </FrameLayout>
 
             <FrameLayout
@@ -142,16 +132,6 @@
                     android:scaleType="center"
                     android:clickable="true"
                     android:focusable="true" />
-                <!-- <TextView
-                    android:id="@+id/btn_forward"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:text="&gt;"
-                    android:textSize="14sp"
-                    android:gravity="center"
-                    android:textColor="@color/circle_symbol"
-                    android:clickable="true"
-                    android:focusable="true" /> -->
             </FrameLayout>
         </LinearLayout>
     </LinearLayout>
