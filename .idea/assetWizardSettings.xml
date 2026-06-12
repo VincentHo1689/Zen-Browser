@@ -90,8 +90,8 @@
                                             <option name="values">
                                               <map>
                                                 <entry key="color" value="000000" />
-                                                <entry key="imagePath" value="$USER_HOME$/Downloads/zen (1).png" />
-                                                <entry key="scalingPercent" value="45" />
+                                                <entry key="imagePath" value="$USER_HOME$/Desktop/zen.png" />
+                                                <entry key="scalingPercent" value="103" />
                                               </map>
                                             </option>
                                           </PersistentState>
