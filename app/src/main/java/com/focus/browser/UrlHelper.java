@@ -32,27 +32,30 @@ public class UrlHelper {
     // Inside UrlHelper class, add these static maps and constants:
     private static final Map<String, String> SAFE_SEARCH_PARAMS = new HashMap<>();
     static {
-        // Google TLDs (The main ones, plus global variations)
-        SAFE_SEARCH_PARAMS.put("google.com", "safe=active");
-        SAFE_SEARCH_PARAMS.put("google.com.hk", "safe=active");
-        SAFE_SEARCH_PARAMS.put("google.co.uk", "safe=active");
-        SAFE_SEARCH_PARAMS.put("google.ca", "safe=active");
-        SAFE_SEARCH_PARAMS.put("google.de", "safe=active");
-        SAFE_SEARCH_PARAMS.put("google.fr", "safe=active");
-        SAFE_SEARCH_PARAMS.put("google.co.jp", "safe=active");
-        SAFE_SEARCH_PARAMS.put("google.it", "safe=active");
-        SAFE_SEARCH_PARAMS.put("google.es", "safe=active");
-        SAFE_SEARCH_PARAMS.put("google.com.br", "safe=active");
-        SAFE_SEARCH_PARAMS.put("google.com.mx", "safe=active");
-        SAFE_SEARCH_PARAMS.put("google.co.in", "safe=active");
-        SAFE_SEARCH_PARAMS.put("google.com.au", "safe=active");
+        // // Google TLDs (The main ones, plus global variations)
+        // SAFE_SEARCH_PARAMS.put("google.com", "safe=active");
+        // SAFE_SEARCH_PARAMS.put("google.com.hk", "safe=active");
+        // SAFE_SEARCH_PARAMS.put("google.co.uk", "safe=active");
+        // SAFE_SEARCH_PARAMS.put("google.ca", "safe=active");
+        // SAFE_SEARCH_PARAMS.put("google.de", "safe=active");
+        // SAFE_SEARCH_PARAMS.put("google.fr", "safe=active");
+        // SAFE_SEARCH_PARAMS.put("google.co.jp", "safe=active");
+        // SAFE_SEARCH_PARAMS.put("google.it", "safe=active");
+        // SAFE_SEARCH_PARAMS.put("google.es", "safe=active");
+        // SAFE_SEARCH_PARAMS.put("google.com.br", "safe=active");
+        // SAFE_SEARCH_PARAMS.put("google.com.mx", "safe=active");
+        // SAFE_SEARCH_PARAMS.put("google.co.in", "safe=active");
+        // SAFE_SEARCH_PARAMS.put("google.com.au", "safe=active");
 
         // Major Search Engines
         SAFE_SEARCH_PARAMS.put("bing.com", "adlt=strict");
         SAFE_SEARCH_PARAMS.put("duckduckgo.com", "kp=1");       // -2 is strict, -1 is moderate, 1 is off
         SAFE_SEARCH_PARAMS.put("search.yahoo.com", "vm=r");       // r is strict, p is moderate, i is off
-        SAFE_SEARCH_PARAMS.put("yandex.com", "nomisspell=1&reask=1&sch=1"); // sch=1 forces family search
-        SAFE_SEARCH_PARAMS.put("yandex.ru", "nomisspell=1&reask=1&sch=1");
+        SAFE_SEARCH_PARAMS.put("yahoo.co.jp", "vm=r");       // r is strict, p is moderate, i is off
+        SAFE_SEARCH_PARAMS.put("yandex.com", "family_mode=2&family=1");
+        SAFE_SEARCH_PARAMS.put("yandex.ru", "family_mode=2&family=1");
+        SAFE_SEARCH_PARAMS.put("search.brave.com", "safesearch=strict");
+
 
         // Secondary & Regional Search Engines
         SAFE_SEARCH_PARAMS.put("baidu.com", "cl=3");              // Restricts adult content filtering
@@ -61,6 +64,9 @@ public class UrlHelper {
         SAFE_SEARCH_PARAMS.put("qwant.com", "safesearch=2");      // 2 is strict, 1 is moderate, 0 is off
         SAFE_SEARCH_PARAMS.put("ask.com", "safeSearch=on");
         SAFE_SEARCH_PARAMS.put("ecosia.org", "safesearch=2");     // 2 is strict (Works on standard web UI, but DNS CNAME is preferred for network enforcement)
+        SAFE_SEARCH_PARAMS.put("startpage.com", "safesearch=1");
+        SAFE_SEARCH_PARAMS.put("ask.com", "safeSearch=on");
+        SAFE_SEARCH_PARAMS.put("search.aol.com", "adlt=strict");
     }
 
     public static String enforceSafeSearch(String url) {
@@ -71,13 +77,17 @@ public class UrlHelper {
             if (host != null) {
                 // Remove leading "www." to match keys
                 String hostKey = host.startsWith("www.") ? host.substring(4) : host;
-                String safeParam = SAFE_SEARCH_PARAMS.get(hostKey);
-                if (safeParam == null) {
-                    // Check if host ends with any key (for subdomains like www.google.com)
-                    for (Map.Entry<String, String> entry : SAFE_SEARCH_PARAMS.entrySet()) {
-                        if (host.equals(entry.getKey()) || host.endsWith("." + entry.getKey())) {
-                            safeParam = entry.getValue();
-                            break;
+                String safeParam = null;
+                if (hostKey.equals("google.com") || hostKey.contains(".google.") || hostKey.startsWith("google.")) {
+                    safeParam = "safe=active";
+                } else {
+                    safeParam = SAFE_SEARCH_PARAMS.get(hostKey);
+                    if (safeParam == null) {
+                        for (Map.Entry<String, String> entry : SAFE_SEARCH_PARAMS.entrySet()) {
+                            if (host.equals(entry.getKey()) || host.endsWith("." + entry.getKey())) {
+                                safeParam = entry.getValue();
+                                break;
+                            }
                         }
                     }
                 }
