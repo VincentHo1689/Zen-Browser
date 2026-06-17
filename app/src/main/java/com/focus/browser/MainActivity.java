@@ -126,6 +126,31 @@ public class MainActivity extends AppCompatActivity {
         forwardWrapper = findViewById(R.id.forward_wrapper);
         suggestionList = findViewById(R.id.suggestion_list);
 
+        // this is added as the targetSdk updated from 34 to 35
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            View mainRoot = findViewById(R.id.main_root);
+            View bottomBar = findViewById(R.id.bottom_bar);
+            
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainRoot, (v, insets) -> {
+                androidx.core.graphics.Insets systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+                androidx.core.graphics.Insets ime = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime());
+                
+                // 1. Add safe margin to the top of the root layout so content clears the status bar cleanly
+                mainRoot.setPadding(0, systemBars.top, 0, 0);
+                
+                // 2. Adjust the bottom bar dynamically when the software keyboard pops up
+                int keyboardHeight = ime.bottom;
+                if (keyboardHeight > 0) {
+                    bottomBar.setPadding(bottomBar.getPaddingLeft(), bottomBar.getPaddingTop(), 
+                                      bottomBar.getPaddingRight(), keyboardHeight);
+                } else {
+                    bottomBar.setPadding(bottomBar.getPaddingLeft(), bottomBar.getPaddingTop(), 
+                                      bottomBar.getPaddingRight(), systemBars.bottom);
+                }
+                return insets;
+            });
+        }
+
         // Setup swipe refresh
         swipeRefreshLayout.setOnRefreshListener(() -> webView.reload());
         swipeRefreshLayout.setEnabled(true); 
@@ -188,6 +213,8 @@ public class MainActivity extends AppCompatActivity {
                 injectScrollDetection(view);
                 injectZenController(view);
                 injectVisibilityOverride(view);
+
+                updateStatusBarToMatchWebsite(view);
             }
         });
 
@@ -450,6 +477,56 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ---- Helpers ----
+    private void updateStatusBarToMatchWebsite(WebView view) {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.LOLLIPOP) return;
+
+        // Extract the actual computed background color of the web page body
+        view.evaluateJavascript(
+            "window.getComputedStyle(document.body).backgroundColor",
+            rgbString -> {
+                if (rgbString == null || rgbString.equals("null") || rgbString.equals("\"rgba(0, 0, 0, 0)\"")) return;
+
+                try {
+                    // Parse "rgb(r, g, b)" or "rgba(r, g, b, a)" string
+                    String clean = rgbString.replace("\"", "").replaceAll("[^0-9,]", "");
+                    String[] parts = clean.split(",");
+                    if (parts.length < 3) return;
+
+                    int r = Integer.parseInt(parts[0].trim());
+                    int g = Integer.parseInt(parts[1].trim());
+                    int b = Integer.parseInt(parts[2].trim());
+                    int webColor = android.graphics.Color.rgb(r, g, b);
+
+                    // Apply background color to both the window status bar and your layout's top spacing layer
+                    getWindow().setStatusBarColor(webColor);
+                    View mainRoot = findViewById(R.id.main_root);
+                    if (mainRoot != null) {
+                        mainRoot.setBackgroundColor(webColor);
+                    }
+
+                    // Calculate color contrast (Luminance formula) to see if website color is light or dark
+                    double luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                    boolean isWebPageDark = luminance < 0.5;
+
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        View decorView = getWindow().getDecorView();
+                        int flags = decorView.getSystemUiVisibility();
+                        if (isWebPageDark) {
+                            // Dark background -> White icons
+                            flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                        } else {
+                            // Light background -> Black/Grey icons
+                            flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                        }
+                        decorView.setSystemUiVisibility(flags);
+                    }
+                } catch (Exception e) {
+                    // Fallback safety if JS returns an unparsable string format
+                }
+            }
+        );
+    }
+
     private void clearAllDataExceptCookies() {
         if (webView != null) {
             webView.clearCache(true);            // clears cache files (images, js, etc.)
