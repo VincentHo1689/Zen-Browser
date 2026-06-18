@@ -1,47 +1,33 @@
 # Zen Browser
 
-A **minimal, no‑distraction browser** built for productivity.
+A **minimal, no‑distraction browser** built for deep work.
 Everything is hardcoded – there are no settings, no toggles, and no way to bypass the restrictions.
 
 ## Key Features
 
-- **Video blocking** – all video formats (mp4, webm, m3u8, YouTube streams) are blocked. Images and JavaScript stay enabled.
-- **Ad & tracker blocking** – uses three powerful blocklists (Hagezi Pro, OISD full, OISD NSFW). Blocked domains cannot be unblocked.
-- **Single tab** – no tab management, no clutter. Exactly one browsing session.
-- **Bottom bar** – address bar on the left, simple `<` (back) and `>` (forward) buttons on the right. No home button, no extras.
-- **Dark / Light theme** – automatically follows your system theme (DayNight).
-- **Extremely lightweight** – the APK is only ~3 MB. No unnecessary permissions, no bloat.
+- **Video Hiding with Audio‑Only Playback** – Videos are visually hidden, but audio continues. An “Audio only” overlay appears over hidden video elements. Trusted sites (Wikipedia, GitHub, Stack Overflow, educational and government domains) are exempt from this restriction.
+- **Hardcoded Blocklists** – Uses Hagezi’s blocklists (NSFW, social, gambling, URL shorteners, hosters, no‑safesearch, threats, and Pro) to block distracting and harmful websites. Blocked domains cannot be unblocked.
+- **Single Tab** – No tab management, no clutter. Exactly one browsing session.
+- **Smart Bottom Bar** – Address bar on the left, simple `<` (back) and `>` (forward) buttons on the right. Long‑press back for bookmarks, long‑press forward for downloads. No home button, no extras.
+- **Session Timer** – A live timer shows how long you’ve been browsing, turning from green to yellow to red as the minutes pass. Displayed directly in the address bar.
+- **Automatic SafeSearch** – Enforces strict SafeSearch on Google, Bing, DuckDuckGo, Yahoo, Yandex, and many other search engines by hardcoding the correct safe‑search parameters into every query.
+- **QR Code Scanner** – A built‑in scanner opens from the address bar to quickly load URLs.
+- **Minimal Bookmarks & Downloads** – Manage bookmarks or view/downloaded files through simple popups, accessible only via long‑press gestures.
+- **Background Audio** – A lightweight foreground service keeps audio playing even if you switch apps.
+- **Dark / Light Theme** – Automatically follows your system theme. The status bar colour adapts to the current website’s background for a seamless look.
+- **Extremely Lightweight** – The APK is only ~1 MB. No unnecessary permissions, no bloat.
 
-## Intuitive
+## Philosophy
 
-This browser is a very lightweight browser for user who wants a browser with minimal distraction, I got this idea from the no browser, however no browser seems outdated and some of the things like the even the javascript is not working, whats why I made this, mainly for myself and i hope that it could help someone who needs it. For the hardcoded function this is because, I am a person without any self controls, the more setting i allow for myself, i just couldne Zen, that browser nowadays just have too many toggles and too many settings for us, so I am making this so I could just use it for doing productivity things, and all other things is blocked.
+No toggles. No settings. No “just this once”. Every safety net is hardcoded because even the smallest option becomes a distraction. This browser is for people who need to work, study, or read without falling into endless tabs and videos.
 
-## Why this browser?
+## Why I Built This
 
-I built this to stay Zened while working.
+I got the idea from “No Browser”, but it felt outdated and often broke JavaScript. Modern browsers drown you in configuration – endless menus, experimental flags, and just enough rope to hang your focus. I made Zen Browser for myself, because I have no self‑control when options exist. If you also struggle to stay on task, I hope this helps you get into a state of **Zen**.
 
-- **No videos** means no YouTube, no embedded clips, no distractions.
-- **Blocklists are hardcoded** – you cannot accidentally (or intentionally) turn them off.
-- **Only one tab** prevents endless tab‑hoarding.
-- **Simple navigation** – just back, forward, and a URL bar.
+## Download
 
-If you need a browser that helps you concentrate, this is it.
-
-## Building from source
-
-```bash
-git clone https://github.com/VincentHo1689/Zen-Browser.git
-cd Zen-Browser
-./gradlew assembleDebug
-```
-
-The APK will be in `app/build/outputs/apk/debug/`.
-
-## How it works
-
-- **Ad blocking** – the three blocklists are fetched on first launch and stored in memory. Every request is checked against the list of blocked domains.
-- **Video blocking** – the browser intercepts requests whose URL ends with `.mp4`, `.webm`, `.3gp`, contains `.m3u8` or `/videoplayback?`, and returns an empty response.
-- **No toggles** – all features are enabled in the code; there is no UI to disable them.
+Get the latest APK from the [Releases page](https://github.com/VincentHo1689/Zen-Browser/releases).
 
 ## License
 
