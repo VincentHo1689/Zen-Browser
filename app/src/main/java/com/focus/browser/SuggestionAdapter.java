@@ -1,4 +1,4 @@
-package com.browser.zen;
+package com.browser.focus;
 
 import android.content.res.Configuration;
 import android.graphics.Color;

@@ -1,4 +1,4 @@
-package com.browser.zen;
+package com.browser.focus;
 
 import android.content.Intent;
 import android.graphics.Bitmap;

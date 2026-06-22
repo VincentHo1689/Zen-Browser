@@ -1,4 +1,4 @@
-package com.browser.zen;
+package com.browser.focus;
 
 import android.app.Activity;
 import android.app.AlertDialog;

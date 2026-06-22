@@ -1,4 +1,4 @@
-package com.browser.zen;
+package com.browser.focus;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -19,7 +19,7 @@ public class BackgroundService extends Service {
         createNotificationChannel();
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Zen Browser")
+                .setContentTitle("Focus Browser")
                 .setContentText("Running in background to allow playback")
                 .setSmallIcon(android.R.drawable.ic_media_play) // You can replace this with your own app icon (e.g. R.drawable.ic_launcher_foreground)
                 .setPriority(NotificationCompat.PRIORITY_LOW)

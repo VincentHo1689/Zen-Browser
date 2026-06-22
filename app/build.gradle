@@ -16,15 +16,15 @@ if (localPropertiesFile.exists()) {
 }
 
 android {
-    namespace 'com.browser.zen'
+    namespace 'com.browser.focus'
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.browser.zen"
+        applicationId "com.browser.focus"
         minSdk 21
         targetSdk 35
-        versionCode 101
-        versionName "1.0.1"
+        versionCode 102
+        versionName "1.0.2"
     }
 
     signingConfigs {

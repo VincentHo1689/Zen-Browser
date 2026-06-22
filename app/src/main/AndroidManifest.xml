@@ -11,7 +11,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="Zen Browser"
+        android:label="Focus Browser"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
         <service
             android:name=".BackgroundService"

@@ -1,4 +1,4 @@
-package com.browser.zen;
+package com.browser.focus;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

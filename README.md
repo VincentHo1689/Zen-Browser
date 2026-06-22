@@ -1,4 +1,4 @@
-# Zen Browser
+# Focus Browser
 
 A **minimal, no‑distraction browser** built for deep work.
 Everything is hardcoded – there are no settings, no toggles, and no way to bypass the restrictions.
@@ -23,7 +23,30 @@ No toggles. No settings. No “just this once”. Every safety net is hardcoded 
 
 ## Why I Built This
 
-I got the idea from “No Browser”, but it felt outdated and often broke JavaScript. Modern browsers drown you in configuration – endless menus, experimental flags, and just enough rope to hang your focus. I made Zen Browser for myself, because I have no self‑control when options exist. If you also struggle to stay on task, I hope this helps you get into a state of **Zen**.
+I got the idea from “No Browser”, but it felt outdated and often broke JavaScript. Modern browsers drown you in configuration – endless menus, experimental flags, and just enough rope to hang your focus. I made Focus Browser for myself, because I have no self‑control when options exist. If you also struggle to stay on task, I hope this helps you get into a state of **Zen**.
+
+## Why This Browser?
+
+The digital minimalism space is crowded, but heavily fragmented. Existing solutions force users to choose between **usability, privacy, and discipline**.
+
+* **Minimalist Browsers** (*Via, Firefox Focus*) keep the web usable, but rely entirely on the user's willpower. They don't block dopamine loops, and it only takes two taps to open YouTube or Reddit.
+* **App Blockers** (*AppBlock, StayFree*) drain battery in the background, require invasive Android permissions (Accessibility/Device Admin) to read your screen, and can still be easily bypassed by turning off the permission in Android Settings.
+* **Text/No-Browser Setups** completely shatter the modern web. By disabling JavaScript or images, they break essential tools like banking apps, university portals, and visual CAPTCHAs, forcing the user to eventually uninstall them out of frustration.
+
+This browser is built differently. It is a **"High-Functionality, Zero-Willpower"** Commitment Device. It keeps the web completely functional while strictly hardcoding the guardrails you need to stay focused—with absolutely zero toggles to negotiate with.
+
+## Feature Comparison Matrix
+
+| Competitor Category            | Example Apps                   | JS Support | Blocklist | Audio-Only | Single-Tab Mode | Un-bypassable | System Permissions | Lightweight |
+| :----------------------------- | :----------------------------- | :--------: | :-------: | :--------: | :-------------: | :-----------: | :----------------: | :---------: |
+| **Mainstream Browsers**  | *Chrome, Edge, Samsung Int.* |    ✔️    |    ❌    |     ❌     |       ❌       |      ❌      |         🟡         |     ❌     |
+| **Privacy Browsers**     | *Brave, DuckDuckGo*          |    ✔️    |    🟡    |     ❌     |       ❌       |      ❌      |         🟡         |     ❌     |
+| **"Mini" Browsers**      | *Via Browser, Tiny Browser*  |    ✔️    |    🟡    |     ❌     |       ❌       |      ❌      |         🟢         |    ✔️    |
+| **Focus Browsers**       | *Firefox Focus*              |    ✔️    |    🟡    |     ❌     |      ✔️      |      ❌      |         🟡         |     ❌     |
+| **Overlay App Blockers** | *AppBlock, StayFree, Forest* |    ✔️    |   ✔️   |     ❌     |       ❌       |      ❌      |         🔴         |     ❌     |
+| **Text-Based Browsers**  | *Lynx, Browsh*               |     ❌     |   ✔️   |     ❌     |      ✔️      |     ✔️     |         🟢         |    ✔️    |
+| **Dumbphone Setups**     | *Minimalist Phone Launcher*  |     ❌     |   ✔️   |     ❌     |       N/A       |     ✔️     |         🔴         |     ❌     |
+| **This Browser**         | *Focus Browser*                |    ✔️    |   ✔️   |    ✔️    |      ✔️      |     ✔️     |         🟢         |    ✔️    |
 
 ## Download
 
